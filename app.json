@@ -2,6 +2,7 @@
   "expo": {
     "name": "lookerservice-client",
     "slug": "lookerservice-client",
+    "scheme": "lookerservice",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -21,10 +22,19 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.lookerserviceclient"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "92c49ec4-4df5-4a2f-a626-5d9f8bac32da"
+      }
+    },
+    "plugins": [
+      "expo-router"
+    ]
   }
 }
