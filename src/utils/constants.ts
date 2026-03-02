@@ -69,17 +69,6 @@ export const TOKEN_REFRESH_THRESHOLD = 5 * 60 * 1000; // 5 minutes before expiry
 export const RESEND_OTP_DELAY = 60; // seconds
 export const RESEND_EMAIL_DELAY = 120; // seconds
 
-// Categories (default fallback if not loaded from API)
-export const DEFAULT_CATEGORIES = [
-  { id: '1', name: 'Plumbing', icon: '🔧' },
-  { id: '2', name: 'Electrical', icon: '⚡' },
-  { id: '3', name: 'Carpentry', icon: '🔨' },
-  { id: '4', name: 'Cleaning', icon: '🧹' },
-  { id: '5', name: 'Landscaping', icon: '🌳' },
-  { id: '6', name: 'Painting', icon: '🎨' },
-  { id: '7', name: 'Moving', icon: '📦' },
-  { id: '8', name: 'IT Support', icon: '💻' },
-];
 
 // Contact Info
 export const SUPPORT_EMAIL = 'support@lookerservice.com';

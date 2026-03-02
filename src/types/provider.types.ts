@@ -21,6 +21,20 @@ export interface Provider {
   createdAt: string;
 }
 
+// API response format for provider list
+export interface ProviderListItem {
+  id: string;
+  business_name: string;
+  business_description: string;
+  address: string;
+  city: string;
+  average_rating: number;
+  total_reviews: number;
+  full_name: string;
+  profile_picture_url: string | null;
+  distance: number;
+}
+
 export interface Service {
   id: string;
   name: string;
@@ -56,6 +70,18 @@ export interface SearchFilters {
   distance?: number;
   rating?: number;
   availability?: 'today' | 'this_week' | 'any';
+}
+
+export interface ExploreFilters {
+  search: string;
+  categoryId: string | null;
+  categoryName: string | null;
+  serviceId: string | null;
+  serviceName: string | null;
+  location: string | null;
+  sortBy: 'rating' | 'reviews' | 'distance' | null;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 export interface ProviderGallery {

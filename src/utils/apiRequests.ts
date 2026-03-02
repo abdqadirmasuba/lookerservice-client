@@ -29,6 +29,7 @@ export const apiRequests = {
   post: (url: string, data?: any) => api.post(url, data),
   put: (url: string, data?: any) => api.put(url, data),
   patch: (url: string, data?: any) => api.patch(url, data),
+  postheaders: (url: string, data?: any, headers?: any) => api.post(url, data, { headers }),
 };
 
 export default api;

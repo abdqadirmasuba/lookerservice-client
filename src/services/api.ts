@@ -1,6 +1,6 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosError } from 'axios';
 import { API_BASE_URL } from '../utils/constants';
-import { getToken, getRefreshToken, saveToken, saveRefreshToken } from '../utils/storage';
+import { getRefreshToken, saveRefreshToken } from '../utils/storage';
 import { store } from '../store';
 import { updateToken, logout } from '../store/slices/authSlice';
 
@@ -64,20 +64,22 @@ api.interceptors.response.use(
         const refreshToken = await getRefreshToken();
         if (!refreshToken) throw new Error('No refresh token');
 
-        const { data } = await axios.post(`${API_BASE_URL}/auth/refresh`, {
-          refreshToken,
+        const { data } = await axios.post(`${API_BASE_URL}/auth/refresh`, {}, {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${refreshToken}`,
+          },
         });
 
-        // Update tokens
-        await saveToken(data.data.accessToken);
-        await saveRefreshToken(data.data.refreshToken);
-        store.dispatch(updateToken(data.data.accessToken));
+        // Refresh token → AsyncStorage, access token → Redux only
+        await saveRefreshToken(data.data.refresh_token);
+        store.dispatch(updateToken(data.data.access_token));
 
         // Retry queued requests
-        onRefreshed(data.data.accessToken);
+        onRefreshed(data.data.access_token);
 
         if (originalRequest.headers) {
-          originalRequest.headers.Authorization = `Bearer ${data.data.accessToken}`;
+          originalRequest.headers.Authorization = `Bearer ${data.data.access_token}`;
         }
         return api(originalRequest);
       } catch (refreshError) {

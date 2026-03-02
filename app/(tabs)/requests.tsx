@@ -4,8 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAppSelector, useAppDispatch } from '../../src/store/hooks';
 import { setRequests } from '../../src/store/slices/requestsSlice';
-import { getMyRequests } from '../../src/services/requests.service';
 import { formatCurrency, formatRelativeTime } from '../../src/utils/formatters';
+import { apiRequests } from '@/src/utils/apiRequests';
 
 export default function RequestsScreen() {
   const router = useRouter();
@@ -20,9 +20,9 @@ export default function RequestsScreen() {
 
   const loadRequests = async () => {
     try {
-      const response = await getMyRequests();
-      if (response.success) {
-        dispatch(setRequests(response.data));
+      const response = await apiRequests.get('/client/requests');
+      if (response.data.success) {
+        dispatch(setRequests(response.data.data));
       }
     } catch (error) {
       console.error('Error loading requests:', error);

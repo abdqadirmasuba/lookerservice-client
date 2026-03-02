@@ -5,9 +5,8 @@ import { useRouter } from 'expo-router';
 import { useAppSelector, useAppDispatch } from '../../src/store/hooks';
 import { setCategories } from '../../src/store/slices/categoriesSlice';
 import { setFeaturedProviders } from '../../src/store/slices/providersSlice';
-import { getAllCategories } from '../../src/services/categories.service';
-import { getFeaturedProviders } from '../../src/services/providers.service';
-import { DEFAULT_CATEGORIES } from '../../src/utils/constants';
+import { apiRequests } from '@/src/utils/apiRequests';
+
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -25,21 +24,18 @@ export default function HomeScreen() {
   const loadData = async () => {
     try {
       // Load categories
-      const categoriesResponse = await getAllCategories();
-      if (categoriesResponse.success) {
-        dispatch(setCategories(categoriesResponse.data));
-      } else {
-        dispatch(setCategories(DEFAULT_CATEGORIES));
+      const categoriesResponse = await apiRequests.get('/client/categories');
+      if (categoriesResponse.data.success) {
+        dispatch(setCategories(categoriesResponse.data.data));
       }
 
       // Load featured providers
-      const providersResponse = await getFeaturedProviders();
-      if (providersResponse.success) {
-        dispatch(setFeaturedProviders(providersResponse.data));
+      const providersResponse = await apiRequests.get('/client/providers/featured');
+      if (providersResponse.data.success) {
+        dispatch(setFeaturedProviders(providersResponse.data.data));
       }
     } catch (error) {
       console.error('Error loading data:', error);
-      dispatch(setCategories(DEFAULT_CATEGORIES));
     }
   };
 
@@ -92,10 +88,17 @@ export default function HomeScreen() {
             {categories.slice(0, 8).map((category) => (
               <View key={category.id} className="w-1/4 px-2 mb-4">
                 <TouchableOpacity
-                  onPress={() => router.push('/explore')}
+                  onPress={() => router.push({
+                    pathname: '/(tabs)/explore',
+                    params: { categoryId: category.id, categoryName: category.name },
+                  })}
                   className="bg-gray-50 rounded-xl p-4 items-center"
                 >
-                  <Text className="text-3xl mb-2">{category.icon}</Text>
+                  <View className="w-10 h-10 rounded-full bg-blue-100 items-center justify-center mb-2">
+                    <Text className="text-primary-600 font-bold text-base">
+                      {category.name.charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
                   <Text className="text-xs text-gray-700 text-center" numberOfLines={2}>
                     {category.name}
                   </Text>

@@ -14,8 +14,8 @@ import {
 import { useAppDispatch } from '../../src/store/hooks';
 import { loginStart, loginSuccess, loginFailure } from '../../src/store/slices/authSlice';
 import { setUser } from '../../src/store/slices/userSlice';
-import { saveToken, saveRefreshToken } from '../../src/utils/storage';
-import { validateEmail, validatePhone } from '../../src/utils/validation';
+import { saveRefreshToken } from '../../src/utils/storage';
+import { validateEmail, validatePhone, validatePassword } from '../../src/utils/validation';
 import { showErrorAlert, showRequiredFieldAlert } from '../../src/utils/alerts';
 import { apiRequests } from '@/src/utils/apiRequests';
 import KeyboardAvoidingWrapper from '@/src/componets/common/KeyboardAvoidingWrapper';
@@ -76,6 +76,12 @@ export default function LoginScreen() {
     if (!password.trim()) {
       setPasswordError('Password is required');
       isValid = false;
+    } else {
+      const passwordCheck = validatePassword(password);
+      if (!passwordCheck.isValid) {
+        setPasswordError(passwordCheck.error || 'Invalid password');
+        isValid = false;
+      }
     }
 
     return isValid;
@@ -83,39 +89,68 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!validateForm()) return;
+    if (activeTab === 'email') {
+      if (!email.trim()) {
+        showRequiredFieldAlert('Email address');
+        return;
+      }
+      if (!password) {
+        showRequiredFieldAlert('Password');
+        return;
+      }
+    }
+    if (activeTab === 'phone') {
+      if (!phone.trim()) {
+        showRequiredFieldAlert('Phone number');
+        return;
+      }
+      if (!password) {
+        showRequiredFieldAlert('Password');
+        return;
+      }
+    }
+
 
     setIsLoading(true);
     dispatch(loginStart());
 
     try {
-      const response = await apiRequests.post('/auth/login', {
-        ...(activeTab === 'email' ? { email: email.trim() } : { phone: phone.trim() }),
-        password,
-      });
+      const data = activeTab === 'email' ? { email, password } : { phone, password };
+      console.log('Login data:', data);
+      const response = await apiRequests.post('/auth/login', data);
 
       const res = response.data;
       console.log('Login response:', res);
 
       if (res.success && res.data) {
-        // Save tokens
-        await saveToken(res.data.access_token);
+        const user = res.data.user;
+
+        // Only allow client role
+        if (user.role !== 'client') {
+          throw new Error('User not supported');
+        }
+
+        // Refresh token → AsyncStorage only
         await saveRefreshToken(res.data.refresh_token);
 
-        // Update Redux
-        // dispatch(loginSuccess({
-        //   token: res.data.access_token,
-        //   refreshToken: res.data.refresh_token,
-        // }));
+        // Access token → Redux only
+        dispatch(loginSuccess({
+          accessToken: res.data.access_token,
+        }));
 
+        // Hydrate Redux user state
         dispatch(setUser({
-          id: res.data.user.id,
-          fullName: res.data.user.full_name,
-          email: res.data.user.email,
-          phone: res.data.user.phone,
-          profileImage: res.data.user.profile_image,
-          // isEmailVerified: res.data.user.email_verified,
-          // isPhoneVerified: res.data.user.phone_verified,
-          createdAt: res.data.user.created_at,
+          id: user.id,
+          fullName: user.full_name,
+          email: user.email,
+          phone: user.phone,
+          role: user.role,
+          status: user.status,
+          profileImage: user.profile_image ?? undefined,
+          isEmailVerified: user.email_verified,
+          isPhoneVerified: user.phone_verified,
+          createdAt: user.created_at,
+          lastLoginAt: user.last_login_at,
         }));
 
         // Navigate to home
@@ -128,7 +163,6 @@ export default function LoginScreen() {
       const errorMessage = error.response?.data?.message || error.message || 'Invalid credentials. Please try again.';
       dispatch(loginFailure(errorMessage));
       setServerError(errorMessage);
-      showErrorAlert('Login Failed', errorMessage);
     } finally {
       setIsLoading(false);
     }

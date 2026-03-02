@@ -15,11 +15,11 @@ import {
 import { useAppDispatch } from '../../src/store/hooks';
 import { loginSuccess } from '../../src/store/slices/authSlice';
 import { setUser } from '../../src/store/slices/userSlice';
-import { register as registerAPI } from '../../src/services/auth.service';
 import { saveToken, saveRefreshToken } from '../../src/utils/storage';
 import { validateEmail, validatePhone, validateName, validatePassword, validateConfirmPassword } from '../../src/utils/validation';
 import { showErrorAlert, showRequiredFieldAlert } from '../../src/utils/alerts';
 import KeyboardAvoidingWrapper from '@/src/componets/common/KeyboardAvoidingWrapper';
+import { apiRequests } from '@/src/utils/apiRequests';
 
 type TabType = 'email' | 'phone';
 
@@ -125,14 +125,14 @@ export default function RegisterScreen() {
     setIsLoading(true);
 
     try {
-      const response = await registerAPI({
+      const response = await apiRequests.post("/auth/register", {
         fullName: fullName.trim(),
         ...(activeTab === 'email' ? { email: email.trim() } : { phone: phone.trim() }),
         password,
         confirmPassword,
       });
 
-      if (response.success && response.data) {
+      if (response.data.success && response.data) {
         // Save tokens
         await saveToken(response.data.accessToken);
         await saveRefreshToken(response.data.refreshToken);
@@ -140,13 +140,12 @@ export default function RegisterScreen() {
         // Update Redux
         dispatch(loginSuccess({
           accessToken: response.data.accessToken,
-          refreshToken: response.data.refreshToken,
         }));
 
         // Navigate to home (or verification if needed)
         router.replace('/(tabs)/home');
       } else {
-        throw new Error(response.message || 'Registration failed');
+        throw new Error(response.data.message || 'Registration failed');
       }
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || error.message || 'Registration failed. Please try again.';

@@ -3,7 +3,6 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 interface AuthState {
   isAuthenticated: boolean;
   token: string | null;
-  refreshToken: string | null;
   isLoading: boolean;
   error: string | null;
 }
@@ -11,7 +10,6 @@ interface AuthState {
 const initialState: AuthState = {
   isAuthenticated: false,
   token: null,
-  refreshToken: null,
   isLoading: false,
   error: null,
 };
@@ -24,10 +22,9 @@ const authSlice = createSlice({
       state.isLoading = true;
       state.error = null;
     },
-    loginSuccess(state, action: PayloadAction<{ accessToken: string; refreshToken: string }>) {
+    loginSuccess(state, action: PayloadAction<{ accessToken: string }>) {
       state.isAuthenticated = true;
       state.token = action.payload.accessToken;
-      state.refreshToken = action.payload.refreshToken;
       state.isLoading = false;
       state.error = null;
     },
@@ -38,7 +35,6 @@ const authSlice = createSlice({
     logout(state) {
       state.isAuthenticated = false;
       state.token = null;
-      state.refreshToken = null;
       state.isLoading = false;
       state.error = null;
     },

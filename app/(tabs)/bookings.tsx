@@ -4,8 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAppSelector, useAppDispatch } from '../../src/store/hooks';
 import { setBookings } from '../../src/store/slices/bookingsSlice';
-import { getMyBookings } from '../../src/services/bookings.service';
 import { formatDateTime, formatCurrency } from '../../src/utils/formatters';
+import { apiRequests } from '@/src/utils/apiRequests';
 
 export default function BookingsScreen() {
   const router = useRouter();
@@ -19,8 +19,8 @@ export default function BookingsScreen() {
 
   const loadBookings = async () => {
     try {
-      const response = await getMyBookings();
-      if (response.success) {
+      const response = await apiRequests.get('/client/bookings');
+      if (response.data.success) {
         dispatch(setBookings(response.data));
       }
     } catch (error) {

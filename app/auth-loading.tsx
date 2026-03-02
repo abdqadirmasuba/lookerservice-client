@@ -4,10 +4,8 @@ import { useRouter } from 'expo-router';
 import { useAppDispatch, useAppSelector } from '../src/store/hooks';
 import { loginSuccess, logout } from '../src/store/slices/authSlice';
 import { setUser } from '../src/store/slices/userSlice';
-import { hasCompletedOnboarding, getRefreshToken, saveToken, saveRefreshToken } from '../src/utils/storage';
-import { refreshToken as refreshTokenAPI } from '../src/services/auth.service';
-import { getProfile } from '../src/services/user.service';
-
+import { hasCompletedOnboarding, getRefreshToken, saveRefreshToken } from '../src/utils/storage';
+import { apiRequests } from '@/src/utils/apiRequests';
 export default function AuthLoading() {
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -38,21 +36,47 @@ export default function AuthLoading() {
 
       // Try to refresh access token
       try {
-        const response = await refreshTokenAPI(refreshTokenValue);
+        const response = await apiRequests.postheaders('/auth/refresh', {},
+          {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${refreshTokenValue}`,
+          },
+        );
         
-        if (response.success && response.data) {
-          // Save new tokens
-          await saveToken(response.data.accessToken);
-          await saveRefreshToken(response.data.refreshToken);
-          
-          // Update Redux
+        const res = response.data;
+        if (res.success && res.data) {
+          const user = res.data.user;
+
+          // Only allow client role
+          if (user.role !== 'client') {
+            dispatch(logout());
+            router.replace('/(auth)/login');
+            return;
+          }
+
+          // Refresh token → AsyncStorage only
+          await saveRefreshToken(res.data.refresh_token);
+
+          // Access token → Redux only
           dispatch(loginSuccess({
-            accessToken: response.data.accessToken,
-            refreshToken: response.data.refreshToken,
+            accessToken: res.data.access_token,
           }));
-          
-        //   dispatch(setUser(response.data.user));
-          
+
+          // Hydrate Redux user state
+          dispatch(setUser({
+            id: user.id,
+            fullName: user.full_name,
+            email: user.email,
+            phone: user.phone,
+            role: user.role,
+            status: user.status,
+            profileImage: user.profile_image ?? undefined,
+            isEmailVerified: user.email_verified,
+            isPhoneVerified: user.phone_verified,
+            createdAt: user.created_at,
+            lastLoginAt: user.last_login_at,
+          }));
+
           // Navigate to main app
           router.replace('/(tabs)/home');
         } else {

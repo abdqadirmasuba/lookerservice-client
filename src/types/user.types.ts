@@ -3,7 +3,11 @@ export interface User {
   fullName: string;
   email?: string;
   phone?: string;
+  role?: string;
+  status?: string;
   profileImage?: string;
+  isEmailVerified?: boolean;
+  isPhoneVerified?: boolean;
   dateOfBirth?: string;
   gender?: 'male' | 'female' | 'other';
   location?: {
@@ -16,6 +20,7 @@ export interface User {
   };
   createdAt: string;
   updatedAt?: string;
+  lastLoginAt?: string;
 }
 
 export interface UpdateProfileData {
