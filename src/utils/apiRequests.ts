@@ -1,0 +1,36 @@
+import axios from 'axios';
+import { config } from './apiConfig';
+
+const api = axios.create({
+  baseURL: config.domain_url,
+});
+
+console.log('API Base URL:', config.domain_url);
+// Add interceptor to include Authorization header only if token exists
+api.interceptors.request.use(
+  async (config) => {
+    // Lazy import store to avoid circular dependency
+    const { store } = await import('../store');
+    const state = store.getState();
+    const authtoken = state.auth.token;
+
+    if (authtoken) {
+      config.headers.Authorization = `Bearer ${authtoken}`;
+    }
+
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+export const apiRequests = {
+  get: (url: string, params?: any) => api.get(url, { params }),
+  post: (url: string, data?: any) => api.post(url, data),
+  put: (url: string, data?: any) => api.put(url, data),
+  patch: (url: string, data?: any) => api.patch(url, data),
+  postheaders: (url: string, data?: any, headers?: any) => api.post(url, data, { headers }),
+};
+
+export default api;
