@@ -1,6 +1,7 @@
 // Format currency (UGX)
-export const formatCurrency = (amount: number): string => {
-  return `UGX ${amount.toLocaleString('en-US')}`;
+export const formatCurrency = (amount: number | null | undefined): string => {
+  if (amount === null || amount === undefined) return 'UGX 0';
+  return `UGX ${Number(amount).toLocaleString('en-US')}`;
 };
 
 // Format date (e.g., Jan 15, 2026)

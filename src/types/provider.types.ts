@@ -21,6 +21,51 @@ export interface Provider {
   createdAt: string;
 }
 
+// Provider Details from API response
+export interface ProviderDetailsResponse {
+  id: string;
+  business_name: string;
+  business_description: string;
+  location: {
+    latitude: number;
+    longitude: number;
+  };
+  address: string;
+  city: string;
+  state_region: string;
+  country: string;
+  postal_code: string;
+  contact_info: {
+    full_name: string;
+    email: string;
+  };
+  rating_summary: {
+    average_rating: number;
+    total_reviews: number;
+  };
+  total_bookings: number;
+  verification_status: 'pending' | 'approved' | 'rejected';
+  member_since: string;
+  reviews: Review[];
+}
+
+export interface ProviderCategory {
+  id: string;
+  name: string;
+  description: string;
+  icon_url: string;
+  services: ProviderService[];
+}
+
+export interface ProviderService {
+  id: string;
+  name: string;
+  description: string;
+  pricing_type: 'fixed' | 'hourly' | 'negotiable';
+  base_price: number;
+  currency: string;
+}
+
 // API response format for provider list
 export interface ProviderListItem {
   id: string;

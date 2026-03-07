@@ -1,4 +1,4 @@
-export interface ServiceCategory {
+export interface Service {
   id: string;
   name: string;
   description?: string;
@@ -12,5 +12,5 @@ export interface Category {
   description?: string;
   icon_url: string | null;
   sort_order: number;
-  service_categories: ServiceCategory[];
+  services: Service[];
 }

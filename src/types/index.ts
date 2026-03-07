@@ -8,6 +8,7 @@ export * from './booking.types';
 export * from './message.types';
 export * from './payment.types';
 export * from './notification.types';
+export * from './dashboard.types';
 
 // Common API response types
 export interface ApiResponse<T = unknown> {

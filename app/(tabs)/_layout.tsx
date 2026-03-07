@@ -1,26 +1,5 @@
 import { Tabs } from 'expo-router';
-import { View, Text } from 'react-native';
-
-// Simple icon components (you can replace with actual icons later)
-const HomeIcon = ({ color }: { color: string }) => (
-  <View className="w-6 h-6 rounded-full" style={{ backgroundColor: color }} />
-);
-
-const SearchIcon = ({ color }: { color: string }) => (
-  <View className="w-6 h-6 rounded-full" style={{ backgroundColor: color }} />
-);
-
-const RequestsIcon = ({ color }: { color: string }) => (
-  <View className="w-6 h-6 rounded-full" style={{ backgroundColor: color }} />
-);
-
-const BookingsIcon = ({ color }: { color: string }) => (
-  <View className="w-6 h-6 rounded-full" style={{ backgroundColor: color }} />
-);
-
-const AccountIcon = ({ color }: { color: string }) => (
-  <View className="w-6 h-6 rounded-full" style={{ backgroundColor: color }} />
-);
+import { Ionicons } from '@expo/vector-icons';
 
 export default function TabsLayout() {
   return (
@@ -42,35 +21,35 @@ export default function TabsLayout() {
         name="home"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color }) => <HomeIcon color={color} />,
+          tabBarIcon: ({ color }) => <Ionicons name="home" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="explore"
         options={{
           title: 'Explore',
-          tabBarIcon: ({ color }) => <SearchIcon color={color} />,
+          tabBarIcon: ({ color }) => <Ionicons name="search" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="requests"
         options={{
           title: 'Requests',
-          tabBarIcon: ({ color }) => <RequestsIcon color={color} />,
+          tabBarIcon: ({ color }) => <Ionicons name="document-text" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="bookings"
         options={{
           title: 'Bookings',
-          tabBarIcon: ({ color }) => <BookingsIcon color={color} />,
+          tabBarIcon: ({ color }) => <Ionicons name="calendar" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="account"
         options={{
           title: 'Account',
-          tabBarIcon: ({ color }) => <AccountIcon color={color} />,
+          tabBarIcon: ({ color }) => <Ionicons name="person" size={24} color={color} />,
         }}
       />
     </Tabs>

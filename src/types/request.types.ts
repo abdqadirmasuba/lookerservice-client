@@ -1,36 +1,37 @@
-export enum RequestStatus {
-  AWAITING_BIDS = 'awaiting_bids',
-  BIDS_RECEIVED = 'bids_received',
-  ACCEPTED = 'accepted',
-  CLOSED = 'closed',
-  CANCELLED = 'cancelled',
+export type RequestType = 'direct' | 'open';
+export type RequestStatus = 'open' | 'in_progress' | 'completed' | 'cancelled' | 'closed';
+
+export interface ServiceRequestService {
+  id: string;
+  title: string;
+  service_name: string;
+  category_name?: string;
 }
 
 export interface ServiceRequest {
   id: string;
-  userId: string;
-  title: string;
+  request_number: string;
+  client_id: string;
+  request_type: RequestType;
   description: string;
-  category: {
-    id: string;
-    name: string;
-  };
-  budget: number;
-  budgetType: 'fixed' | 'negotiable';
-  location: {
-    address: string;
-    city: string;
-    district: string;
-    additionalDirections?: string;
-  };
-  urgency: 'asap' | 'scheduled';
-  scheduledDate?: string;
-  scheduledTime?: string;
-  photos?: string[];
+  address: string;
+  city: string;
   status: RequestStatus;
-  bidsCount: number;
-  createdAt: string;
-  updatedAt?: string;
+  budget_min: number | null;
+  budget_max: number | null;
+  preferred_date: string | null;
+  deadline: string | null;
+  images: string[] | null;
+  services: ServiceRequestService[];
+  bid_count: number;
+  created_at: string;
+  // Optional fields that might come in detail view
+  target_provider_id?: string;
+  target_provider_name?: string;
+  location?: {
+    latitude: number;
+    longitude: number;
+  };
 }
 
 export interface CreateRequestData {

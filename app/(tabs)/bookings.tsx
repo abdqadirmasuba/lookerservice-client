@@ -21,7 +21,7 @@ export default function BookingsScreen() {
     try {
       const response = await apiRequests.get('/client/bookings');
       if (response.data.success) {
-        dispatch(setBookings(response.data));
+        dispatch(setBookings(response.data.data));
       }
     } catch (error) {
       console.error('Error loading bookings:', error);

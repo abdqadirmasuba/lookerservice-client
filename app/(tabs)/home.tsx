@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useAppSelector, useAppDispatch } from '../../src/store/hooks';
-import { setCategories } from '../../src/store/slices/categoriesSlice';
-import { setFeaturedProviders } from '../../src/store/slices/providersSlice';
+import { setDashboardSummary, setDashboardLoading, setDashboardError } from '../../src/store/slices/dashboardSlice';
 import { apiRequests } from '@/src/utils/apiRequests';
 
 
@@ -12,141 +12,264 @@ export default function HomeScreen() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const user = useAppSelector((state) => state.user.user);
-  const categories = useAppSelector((state) => state.categories.categories);
-  const featuredProviders = useAppSelector((state) => state.providers.featuredProviders);
-  const [searchQuery, setSearchQuery] = useState('');
+  const dashboardSummary = useAppSelector((state) => state.dashboard.summary);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    loadData();
+    loadDashboard();
   }, []);
 
-  const loadData = async () => {
+  const loadDashboard = async () => {
     try {
-      // Load categories
-      const categoriesResponse = await apiRequests.get('/client/categories');
-      if (categoriesResponse.data.success) {
-        dispatch(setCategories(categoriesResponse.data.data));
-      }
-
-      // Load featured providers
-      const providersResponse = await apiRequests.get('/client/providers/featured');
-      if (providersResponse.data.success) {
-        dispatch(setFeaturedProviders(providersResponse.data.data));
+      dispatch(setDashboardLoading(true));
+      const response = await apiRequests.get('/client/dashboard/summary');
+      if (response.data.success) {
+        dispatch(setDashboardSummary(response.data.data));
       }
     } catch (error) {
-      console.error('Error loading data:', error);
+      console.error('Error loading dashboard:', error);
+      dispatch(setDashboardError('Failed to load dashboard'));
+    } finally {
+      dispatch(setDashboardLoading(false));
     }
   };
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadData();
+    await loadDashboard();
     setRefreshing(false);
   };
 
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-gray-50">
       <ScrollView
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {/* Header */}
-        <View className="px-6 pt-4 pb-6">
-          <Text className="text-2xl font-bold text-gray-900 mb-1">
-            Hello, {user?.fullName || 'Guest'}!
-          </Text>
-          <Text className="text-gray-600">What service do you need today?</Text>
-        </View>
-
-        {/* Search Bar */}
-        <View className="px-6 mb-6">
-          <View className="flex-row items-center bg-gray-100 rounded-xl px-4 py-3">
-            <TextInput
-              className="flex-1 text-base"
-              placeholder="Search for services..."
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              onSubmitEditing={() => router.push('/search/results')}
-            />
-          </View>
-        </View>
-
-        {/* Post Request CTA */}
-        <View className="px-6 mb-6">
-          <TouchableOpacity
-            onPress={() => router.push('/(service-request)/create/step1')}
-            className="bg-primary-500 py-5 rounded-xl items-center"
-          >
-            <Text className="text-white font-semibold text-lg">Post a Service Request</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Categories */}
-        <View className="px-6 mb-6">
-          <Text className="text-xl font-bold text-gray-900 mb-4">Categories</Text>
-          <View className="flex-row flex-wrap -mx-2">
-            {categories.slice(0, 8).map((category) => (
-              <View key={category.id} className="w-1/4 px-2 mb-4">
-                <TouchableOpacity
-                  onPress={() => router.push({
-                    pathname: '/(tabs)/explore',
-                    params: { categoryId: category.id, categoryName: category.name },
-                  })}
-                  className="bg-gray-50 rounded-xl p-4 items-center"
-                >
-                  <View className="w-10 h-10 rounded-full bg-blue-100 items-center justify-center mb-2">
-                    <Text className="text-primary-600 font-bold text-base">
-                      {category.name.charAt(0).toUpperCase()}
-                    </Text>
-                  </View>
-                  <Text className="text-xs text-gray-700 text-center" numberOfLines={2}>
-                    {category.name}
+        {/* Header with Notifications */}
+        <View className="px-6 pt-4 pb-6 bg-white">
+          <View className="flex-row justify-between items-start mb-4">
+            <View className="flex-1">
+              <Text className="text-2xl font-bold text-gray-900 mb-1">
+                Hello, {user?.fullName || 'Guest'}!
+              </Text>
+              <Text className="text-gray-600">Welcome back to your dashboard</Text>
+            </View>
+            <TouchableOpacity 
+              onPress={() => router.push('/notifications-list')}
+              className="w-12 h-12 rounded-full bg-gray-100 items-center justify-center relative"
+            >
+              <Ionicons name="notifications-outline" size={24} color="#1F2937" />
+              {(dashboardSummary?.unread_notifications_count || 0) > 0 && (
+                <View className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 rounded-full items-center justify-center">
+                  <Text className="text-white text-xs font-bold">
+                    {(dashboardSummary?.unread_notifications_count || 0) > 9 ? '9+' : dashboardSummary?.unread_notifications_count}
                   </Text>
-                </TouchableOpacity>
-              </View>
-            ))}
+                </View>
+              )}
+            </TouchableOpacity>
           </View>
         </View>
 
-        {/* Featured Providers */}
-        {featuredProviders.length > 0 && (
+        {/* Call to Action Buttons */}
+        <View className="px-6 pt-4 pb-6 bg-white mb-4">
+          <View className="flex-row gap-4">
+            <TouchableOpacity
+              onPress={() => router.push('/(service-request)/create')}
+              className="flex-1 bg-primary-500 py-4 rounded-xl items-center"
+            >
+              <Text className="text-white font-semibold text-base">📝 Post Request</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => router.push('/(tabs)/explore')}
+              className="flex-1 bg-gray-900 py-4 rounded-xl items-center"
+            >
+              <Text className="text-white font-semibold text-base">🔍 Find Provider</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Dashboard Summary Cards */}
+        <View className="px-6 mb-6">
+          <View className="flex-row gap-4">
+            <View className="flex-1 bg-blue-50 rounded-xl p-4">
+              <Text className="text-3xl font-bold text-blue-600 mb-1">
+                {dashboardSummary?.active_requests_count || 0}
+              </Text>
+              <Text className="text-gray-700 font-medium">Active Requests</Text>
+            </View>
+            <View className="flex-1 bg-green-50 rounded-xl p-4">
+              <Text className="text-3xl font-bold text-green-600 mb-1">
+                {dashboardSummary?.active_bookings_count || 0}
+              </Text>
+              <Text className="text-gray-700 font-medium">Active Bookings</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Active Requests Section */}
+        {dashboardSummary && dashboardSummary.active_requests_count > 0 && (
           <View className="px-6 mb-6">
             <View className="flex-row justify-between items-center mb-4">
-              <Text className="text-xl font-bold text-gray-900">Featured Providers</Text>
-              <TouchableOpacity onPress={() => router.push('/explore')}>
+              <Text className="text-xl font-bold text-gray-900">Active Requests</Text>
+              <TouchableOpacity onPress={() => router.push('/(tabs)/requests')}>
                 <Text className="text-primary-500 font-medium">View All</Text>
               </TouchableOpacity>
             </View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-6 px-6">
-              {featuredProviders.map((provider) => (
-                <TouchableOpacity
-                  key={provider.id}
-                  onPress={() => router.push(`/(providers)/${provider.id}/profile`)}
-                  className="bg-gray-50 rounded-xl p-4 mr-4 w-64"
-                >
-                  <View className="bg-gray-300 h-32 rounded-lg mb-3" />
-                  <Text className="font-semibold text-gray-900 mb-1" numberOfLines={1}>
-                    {provider.businessName}
+            {/* {dashboardSummary.active_requests.map((request) => (
+              <TouchableOpacity
+                key={request.id}
+                onPress={() => router.push(`/(service-request)/${request.id}`)}
+                className="bg-white rounded-xl p-4 mb-3 shadow-sm"
+              >
+                <View className="flex-row justify-between items-start mb-2">
+                  <Text className="text-sm font-semibold text-gray-500">
+                    {request.request_number}
                   </Text>
-                  <Text className="text-sm text-gray-600 mb-2">
-                    ⭐ {provider.rating.toFixed(1)} ({provider.reviewsCount} reviews)
-                  </Text>
-                  <Text className="text-xs text-gray-500">{provider.location.city}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+                  <View className="bg-blue-100 px-3 py-1 rounded-full">
+                    <Text className="text-xs font-semibold text-blue-700 capitalize">
+                      {request.status}
+                    </Text>
+                  </View>
+                </View>
+                <Text className="font-bold text-gray-900 mb-2" numberOfLines={2}>
+                  {request.title}
+                </Text>
+                <View className="flex-row justify-between items-center">
+                  <View>
+                    <Text className="text-xs text-gray-600">
+                      {request.request_type === 'direct' ? '📍 Direct Request' : '📢 Open Request'}
+                    </Text>
+                    {request.target_provider_name && (
+                      <Text className="text-xs text-gray-600 mt-1">
+                        To: {request.target_provider_name}
+                      </Text>
+                    )}
+                  </View>
+                  <View className="items-end">
+                    <Text className="text-xs text-gray-500">{formatDate(request.created_at)}</Text>
+                    <Text className="text-xs text-gray-600 mt-1">
+                      {request.bid_count} {request.bid_count === 1 ? 'bid' : 'bids'}
+                    </Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))} */}
           </View>
         )}
 
-        {/* Help Section */}
-        <View className="px-6 mb-8">
-          <View className="bg-blue-50 rounded-xl p-6">
-            <Text className="text-lg font-bold text-gray-900 mb-2">Need Help?</Text>
-            <Text className="text-gray-600 mb-4">Contact our support team anytime</Text>
-            <TouchableOpacity className="bg-primary-500 py-3 rounded-lg items-center">
-              <Text className="text-white font-semibold">Contact Support</Text>
+        {/* Active Bookings Section */}
+        {dashboardSummary && dashboardSummary.active_bookings_count > 0 && (
+          <View className="px-6 mb-6">
+            <View className="flex-row justify-between items-center mb-4">
+              <Text className="text-xl font-bold text-gray-900">Active Bookings</Text>
+              <TouchableOpacity onPress={() => router.push('/(tabs)/bookings')}>
+                <Text className="text-primary-500 font-medium">View All</Text>
+              </TouchableOpacity>
+            </View>
+            {/* {dashboardSummary.active_bookings.map((booking) => (
+              <TouchableOpacity
+                key={booking.id}
+                onPress={() => router.push(`/(bookings)/${booking.id}`)}
+                className="bg-white rounded-xl p-4 mb-3 shadow-sm"
+              >
+                <View className="flex-row justify-between items-start mb-2">
+                  <Text className="text-sm font-semibold text-gray-500">
+                    {booking.booking_number}
+                  </Text>
+                  <View className="bg-green-100 px-3 py-1 rounded-full">
+                    <Text className="text-xs font-semibold text-green-700 capitalize">
+                      {booking.status}
+                    </Text>
+                  </View>
+                </View>
+                <Text className="font-bold text-gray-900 mb-2" numberOfLines={2}>
+                  {booking.service_title}
+                </Text>
+                <View className="flex-row justify-between items-center">
+                  <Text className="text-sm text-gray-600">
+                    👤 {booking.provider_name}
+                  </Text>
+                  <Text className="text-xs text-gray-500">
+                    {formatDate(booking.scheduled_date)}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))} */}
+          </View>
+        )}
+
+        {/* Quick Navigation Cards */}
+        <View className="px-6 mb-6">
+          <Text className="text-xl font-bold text-gray-900 mb-4">Quick Actions</Text>
+          <View className="space-y-3">
+            <TouchableOpacity 
+              onPress={() => router.push('/(tabs)/requests')}
+              className="bg-white rounded-xl p-5 shadow-sm flex-row items-center"
+            >
+              <View className="w-12 h-12 bg-blue-100 rounded-full items-center justify-center mr-4">
+                <Text className="text-2xl">📋</Text>
+              </View>
+              <View className="flex-1">
+                <Text className="font-bold text-gray-900 text-base">My Requests</Text>
+                <Text className="text-gray-600 text-sm">View all your service requests</Text>
+              </View>
+              <Text className="text-gray-400 text-xl">›</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              onPress={() => router.push('/(tabs)/bookings')}
+              className="bg-white rounded-xl p-5 shadow-sm flex-row items-center"
+            >
+              <View className="w-12 h-12 bg-green-100 rounded-full items-center justify-center mr-4">
+                <Text className="text-2xl">📅</Text>
+              </View>
+              <View className="flex-1">
+                <Text className="font-bold text-gray-900 text-base">My Bookings</Text>
+                <Text className="text-gray-600 text-sm">Manage your active bookings</Text>
+              </View>
+              <Text className="text-gray-400 text-xl">›</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              onPress={() => router.push('/(tabs)/explore')}
+              className="bg-white rounded-xl p-5 shadow-sm flex-row items-center"
+            >
+              <View className="w-12 h-12 bg-purple-100 rounded-full items-center justify-center mr-4">
+                <Text className="text-2xl">🔍</Text>
+              </View>
+              <View className="flex-1">
+                <Text className="font-bold text-gray-900 text-base">Browse Providers</Text>
+                <Text className="text-gray-600 text-sm">Find service providers near you</Text>
+              </View>
+              <Text className="text-gray-400 text-xl">›</Text>
             </TouchableOpacity>
           </View>
+        </View>
+
+        {/* Help Section */}
+        <View className="px-6 mb-8">
+          <TouchableOpacity 
+            onPress={() => router.push('/(account)/help')}
+            className="bg-gradient-to-br bg-blue-500 rounded-xl p-6 shadow-sm"
+          >
+            <View className="flex-row items-center mb-3">
+              <View className="w-12 h-12 bg-white/20 rounded-full items-center justify-center mr-4">
+                <Text className="text-2xl">💬</Text>
+              </View>
+              <View className="flex-1">
+                <Text className="text-lg font-bold text-white mb-1">Need Help?</Text>
+                <Text className="text-blue-100 text-sm">Contact our support team anytime</Text>
+              </View>
+            </View>
+            <View className="bg-white rounded-lg py-3 items-center">
+              <Text className="text-blue-600 font-semibold">Contact Support</Text>
+            </View>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>

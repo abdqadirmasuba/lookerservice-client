@@ -1,6 +1,5 @@
 import axios from 'axios';
 import { config } from './apiConfig';
-import { RootState,store } from '../store';
 
 const api = axios.create({
   baseURL: config.domain_url,
@@ -10,7 +9,9 @@ console.log('API Base URL:', config.domain_url);
 // Add interceptor to include Authorization header only if token exists
 api.interceptors.request.use(
   async (config) => {
-    const state: RootState = store.getState();
+    // Lazy import store to avoid circular dependency
+    const { store } = await import('../store');
+    const state = store.getState();
     const authtoken = state.auth.token;
 
     if (authtoken) {
