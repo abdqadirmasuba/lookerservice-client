@@ -7,17 +7,20 @@ import { clearUser } from '../../src/store/slices/userSlice';
 import { clearAllStorage } from '../../src/utils/storage';
 import { showLogoutConfirm } from '../../src/utils/alerts';
 import { getInitials } from '../../src/utils/formatters';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
 export default function AccountScreen() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const user = useAppSelector((state) => state.user.user);
-
+  
   const handleLogout = () => {
     showLogoutConfirm(async () => {
-      await clearAllStorage();
+      await clearAllStorage();  
       dispatch(logout());
       dispatch(clearUser());
+      await GoogleSignin.signOut();
+      
       router.replace('/(auth)/login');
     });
   };
