@@ -4,7 +4,12 @@ import { PersistGate } from 'redux-persist/integration/react';
 import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator } from 'react-native';
 import { store, persistor } from '@/src/store';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import "@/global.css";
+
+GoogleSignin.configure({
+  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+});
 
 export default function RootLayout() {
   return (

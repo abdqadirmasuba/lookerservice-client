@@ -16,8 +16,9 @@ import { loginStart, loginSuccess, loginFailure } from '../../src/store/slices/a
 import { setUser } from '../../src/store/slices/userSlice';
 import { saveRefreshToken } from '../../src/utils/storage';
 import { validateEmail, validatePhone, validatePassword } from '../../src/utils/validation';
-import { showErrorAlert, showRequiredFieldAlert } from '../../src/utils/alerts';
+import { showRequiredFieldAlert } from '../../src/utils/alerts';
 import { apiRequests } from '@/src/utils/apiRequests';
+import { signInWithGoogle } from '../../src/utils/googleAuth';
 import KeyboardAvoidingWrapper from '@/src/componets/common/KeyboardAvoidingWrapper';
 
 type TabType = 'email' | 'phone';
@@ -31,6 +32,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   // Error states
   const [emailError, setEmailError] = useState('');
@@ -169,8 +171,13 @@ export default function LoginScreen() {
   };
 
   const handleGoogleLogin = async () => {
-    // TODO: Implement Google OAuth
-    showErrorAlert('Coming Soon', 'Google login will be available soon!');
+    setIsGoogleLoading(true);
+    setServerError('');
+    const result = await signInWithGoogle(dispatch, (msg) => setServerError(msg));
+    setIsGoogleLoading(false);
+    if (result === 'success') {
+      router.replace('/(tabs)/home');
+    }
   };
 
   return (
@@ -375,11 +382,17 @@ export default function LoginScreen() {
             </View>
 
             {/* Google Sign In */}
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={handleGoogleLogin}
+              disabled={isGoogleLoading}
+              activeOpacity={0.8}
               className="border-2 border-gray-200 dark:border-[#334155] py-4 rounded-full items-center flex-row justify-center"
             >
-              <Text className="text-gray-700 dark:text-gray-300 font-medium">Continue with Google</Text>
+              {isGoogleLoading ? (
+                <ActivityIndicator size="small" color="#6B7280" />
+              ) : (
+                <Text className="text-gray-700 dark:text-gray-300 font-medium">Continue with Google</Text>
+              )}
             </TouchableOpacity>
           </View>
 

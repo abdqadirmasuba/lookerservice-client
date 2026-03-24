@@ -1,45 +1,43 @@
 export enum BookingStatus {
   PENDING = 'pending',
+  ACCEPTED = 'accepted',
   CONFIRMED = 'confirmed',
   IN_PROGRESS = 'in_progress',
   COMPLETED = 'completed',
   CANCELLED = 'cancelled',
 }
 
+export type BookingStatusString = 'pending' | 'accepted' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled';
+
+export interface BookingService {
+  id: string;
+  service_name: string;
+  title: string;
+}
+
+export interface BookingPaymentMethod {
+  payment_method: string;
+  valid: boolean;
+}
+
+/** Shape returned by /client/bookings */
 export interface Booking {
   id: string;
-  userId: string;
-  providerId: string;
-  provider: {
-    id: string;
-    businessName: string;
-    profileImage?: string;
-    rating: number;
-    phone?: string;
-  };
-  service: {
-    id: string;
-    name: string;
-  };
-  scheduledDate: string;
-  scheduledTime: string;
-  location: {
-    address: string;
-    city: string;
-    district: string;
-    additionalDirections?: string;
-  };
-  specialInstructions?: string;
-  amount: number;
-  platformFee: number;
-  totalAmount: number;
-  status: BookingStatus;
-  timeline?: BookingTimeline;
-  paymentStatus: 'pending' | 'paid' | 'refunded';
-  requestId?: string;
-  bidId?: string;
-  createdAt: string;
-  updatedAt?: string;
+  booking_number: string;
+  client_id: string;
+  provider_id: string;
+  service_request_id: string;
+  status: BookingStatusString;
+  booking_date: string;
+  client_notes: string | null;
+  agreed_amount: number | null;
+  payment_method: BookingPaymentMethod;
+  business_name: string;
+  provider_name: string;
+  provider_phone: string | null;
+  services: BookingService[];
+  created_at: string;
+  updated_at: string;
 }
 
 export interface BookingTimeline {

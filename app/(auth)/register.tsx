@@ -18,6 +18,7 @@ import { setUser } from '../../src/store/slices/userSlice';
 import { saveToken, saveRefreshToken } from '../../src/utils/storage';
 import { validateEmail, validatePhone, validateName, validatePassword, validateConfirmPassword } from '../../src/utils/validation';
 import { showErrorAlert, showRequiredFieldAlert } from '../../src/utils/alerts';
+import { signInWithGoogle } from '../../src/utils/googleAuth';
 import KeyboardAvoidingWrapper from '@/src/componets/common/KeyboardAvoidingWrapper';
 import { apiRequests } from '@/src/utils/apiRequests';
 
@@ -35,6 +36,7 @@ export default function RegisterScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   // Error states
   const [fullNameError, setFullNameError] = useState('');
@@ -117,6 +119,16 @@ export default function RegisterScreen() {
     }
 
     return isValid;
+  };
+
+  const handleGoogleSignUp = async () => {
+    setIsGoogleLoading(true);
+    setServerError('');
+    const result = await signInWithGoogle(dispatch, (msg) => setServerError(msg));
+    setIsGoogleLoading(false);
+    if (result === 'success') {
+      router.replace('/(tabs)/home');
+    }
   };
 
   const handleRegister = async () => {
@@ -408,8 +420,17 @@ export default function RegisterScreen() {
             </TouchableOpacity>
 
             {/* Google Sign Up */}
-            <TouchableOpacity className="border-2 border-gray-200 dark:border-[#334155] py-4 rounded-full items-center mt-4">
-              <Text className="text-gray-700 dark:text-gray-300 font-medium">Sign up with Google</Text>
+            <TouchableOpacity
+              onPress={handleGoogleSignUp}
+              disabled={isGoogleLoading}
+              activeOpacity={0.8}
+              className="border-2 border-gray-200 dark:border-[#334155] py-4 rounded-full items-center mt-4"
+            >
+              {isGoogleLoading ? (
+                <ActivityIndicator size="small" color="#6B7280" />
+              ) : (
+                <Text className="text-gray-700 dark:text-gray-300 font-medium">Sign up with Google</Text>
+              )}
             </TouchableOpacity>
           </View>
 

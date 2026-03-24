@@ -1,21 +1,23 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import type { Booking, BookingStatus } from '../../types';
+import type { Booking } from '../../types';
 
 interface BookingsState {
   bookings: Booking[];
-  upcomingBookings: Booking[];
-  completedBookings: Booking[];
   selectedBooking: Booking | null;
   isLoading: boolean;
+  isLoadingMore: boolean;
+  hasMore: boolean;
+  offset: number;
   error: string | null;
 }
 
 const initialState: BookingsState = {
   bookings: [],
-  upcomingBookings: [],
-  completedBookings: [],
   selectedBooking: null,
   isLoading: false,
+  isLoadingMore: false,
+  hasMore: true,
+  offset: 0,
   error: null,
 };
 
@@ -25,77 +27,44 @@ const bookingsSlice = createSlice({
   reducers: {
     setBookings(state, action: PayloadAction<Booking[]>) {
       state.bookings = action.payload;
-      state.upcomingBookings = action.payload.filter(
-        (b) => b.status === 'confirmed' || b.status === 'in_progress'
-      );
-      state.completedBookings = action.payload.filter((b) => b.status === 'completed');
+      state.offset = action.payload.length;
+      state.hasMore = action.payload.length >= 20;
       state.error = null;
     },
-    addBooking(state, action: PayloadAction<Booking>) {
-      state.bookings = [action.payload, ...state.bookings];
-      if (action.payload.status === 'confirmed' || action.payload.status === 'in_progress') {
-        state.upcomingBookings = [action.payload, ...state.upcomingBookings];
-      }
-    },
-    updateBooking(state, action: PayloadAction<Booking>) {
-      const index = state.bookings.findIndex((b) => b.id === action.payload.id);
-      if (index !== -1) {
-        state.bookings[index] = action.payload;
-      }
-      
-      // Update upcoming bookings
-      const upcomingIndex = state.upcomingBookings.findIndex((b) => b.id === action.payload.id);
-      if (upcomingIndex !== -1) {
-        if (action.payload.status === 'confirmed' || action.payload.status === 'in_progress') {
-          state.upcomingBookings[upcomingIndex] = action.payload;
-        } else {
-          state.upcomingBookings.splice(upcomingIndex, 1);
-        }
-      }
-      
-      // Update completed bookings
-      if (action.payload.status === 'completed') {
-        const completedIndex = state.completedBookings.findIndex((b) => b.id === action.payload.id);
-        if (completedIndex === -1) {
-          state.completedBookings = [action.payload, ...state.completedBookings];
-        }
-      }
-    },
-    cancelBooking(state, action: PayloadAction<string>) {
-      const index = state.bookings.findIndex((b) => b.id === action.payload);
-      if (index !== -1) {
-        // state.bookings[index].status = 'cancelled';
-      }
-      state.upcomingBookings = state.upcomingBookings.filter((b) => b.id !== action.payload);
+    appendBookings(state, action: PayloadAction<Booking[]>) {
+      state.bookings = [...state.bookings, ...action.payload];
+      state.offset = state.bookings.length;
+      state.hasMore = action.payload.length >= 20;
     },
     setSelectedBooking(state, action: PayloadAction<Booking | null>) {
       state.selectedBooking = action.payload;
     },
-    filterBookingsByStatus(state, action: PayloadAction<BookingStatus | 'all'>) {
-      if (action.payload === 'all') {
-        state.upcomingBookings = state.bookings;
-      } else {
-        state.upcomingBookings = state.bookings.filter((b) => b.status === action.payload);
-      }
-    },
     setBookingsLoading(state, action: PayloadAction<boolean>) {
       state.isLoading = action.payload;
     },
+    setBookingsLoadingMore(state, action: PayloadAction<boolean>) {
+      state.isLoadingMore = action.payload;
+    },
     setBookingsError(state, action: PayloadAction<string | null>) {
       state.error = action.payload;
+    },
+    resetBookings(state) {
+      state.bookings = [];
+      state.offset = 0;
+      state.hasMore = true;
+      state.error = null;
     },
   },
 });
 
 export const {
   setBookings,
-  addBooking,
-  updateBooking,
-  cancelBooking,
+  appendBookings,
   setSelectedBooking,
-  filterBookingsByStatus,
   setBookingsLoading,
+  setBookingsLoadingMore,
   setBookingsError,
+  resetBookings,
 } = bookingsSlice.actions;
 
 export default bookingsSlice.reducer;

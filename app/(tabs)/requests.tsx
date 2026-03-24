@@ -268,7 +268,7 @@ export default function RequestsScreen() {
 
       {/* FAB */}
       <TouchableOpacity
-        onPress={() => router.push('/(service-request)/create/index')}
+        onPress={() => router.push('/(service-request)/create')}
         className="absolute bottom-6 right-6 bg-primary-500 w-16 h-16 rounded-full items-center justify-center shadow-lg"
       >
         <Text className="text-white text-3xl">+</Text>
