@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -25,6 +25,7 @@ type TabType = 'email' | 'phone';
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { verified } = useLocalSearchParams<{ verified?: string }>();
   const dispatch = useAppDispatch();
   const [activeTab, setActiveTab] = useState<TabType>('email');
   const [email, setEmail] = useState('');
@@ -118,12 +119,8 @@ export default function LoginScreen() {
 
     try {
       const data = activeTab === 'email' ? { email, password } : { phone, password };
-      console.log('Login data:', data);
       const response = await apiRequests.post('/auth/login', data);
-
       const res = response.data;
-      console.log('Login response:', res);
-
       if (res.success && res.data) {
         const user = res.data.user;
 
@@ -161,7 +158,6 @@ export default function LoginScreen() {
         throw new Error(res.message || 'Login failed');
       }
     } catch (error: any) {
-      console.error('Login error:', error);
       const errorMessage = error.response?.data?.message || error.message || 'Invalid credentials. Please try again.';
       dispatch(loginFailure(errorMessage));
       setServerError(errorMessage);
@@ -202,6 +198,13 @@ export default function LoginScreen() {
         <View className="px-6 -mt-6">
           <View className="bg-white dark:bg-[#1E293B] rounded-3xl p-6 shadow-lg">
             
+            {/* Verified Success Banner */}
+            {verified === 'true' ? (
+              <View className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 mb-4">
+                <Text className="text-green-700 text-center font-medium text-sm">✅ Account verified! You can now log in.</Text>
+              </View>
+            ) : null}
+
             {/* Server Error Badge */}
             {serverError ? (
               <View className="bg-error/10 border border-error rounded-xl px-4 py-3 mb-4">

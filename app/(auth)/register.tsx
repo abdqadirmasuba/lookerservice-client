@@ -13,14 +13,11 @@ import {
   UserIcon,
 } from 'react-native-heroicons/outline';
 import { useAppDispatch } from '../../src/store/hooks';
-import { loginSuccess } from '../../src/store/slices/authSlice';
-import { setUser } from '../../src/store/slices/userSlice';
-import { saveToken, saveRefreshToken } from '../../src/utils/storage';
 import { validateEmail, validatePhone, validateName, validatePassword, validateConfirmPassword } from '../../src/utils/validation';
-import { showErrorAlert, showRequiredFieldAlert } from '../../src/utils/alerts';
 import { signInWithGoogle } from '../../src/utils/googleAuth';
 import KeyboardAvoidingWrapper from '@/src/componets/common/KeyboardAvoidingWrapper';
 import { apiRequests } from '@/src/utils/apiRequests';
+import VerificationModal from '@/src/componets/modals/VerificationModal';
 
 type TabType = 'email' | 'phone';
 
@@ -37,6 +34,14 @@ export default function RegisterScreen() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+
+  // Verification modal state
+  const [verificationModal, setVerificationModal] = useState<{
+    visible: boolean;
+    channel: 'email' | 'phone';
+    address: string;
+    message: string;
+  }>({ visible: false, channel: 'email', address: '', message: '' });
 
   // Error states
   const [fullNameError, setFullNameError] = useState('');
@@ -137,32 +142,34 @@ export default function RegisterScreen() {
     setIsLoading(true);
 
     try {
-      const response = await apiRequests.post("/auth/register", {
-        fullName: fullName.trim(),
-        ...(activeTab === 'email' ? { email: email.trim() } : { phone: phone.trim() }),
+      const payload: Record<string, string> = {
+        full_name: fullName.trim(),
         password,
-        confirmPassword,
-      });
-
-      if (response.data.success && response.data) {
-        // Save tokens
-        await saveToken(response.data.accessToken);
-        await saveRefreshToken(response.data.refreshToken);
-
-        // Update Redux
-        dispatch(loginSuccess({
-          accessToken: response.data.accessToken,
-        }));
-
-        // Navigate to home (or verification if needed)
-        router.replace('/(tabs)/home');
+        role: 'client',
+      };
+      if (activeTab === 'email') {
+        payload.email = email.trim();
       } else {
-        throw new Error(response.data.message || 'Registration failed');
+        payload.phone = phone.trim().startsWith('+') ? phone.trim() : `+256${phone.trim()}`;
+      }
+
+      const response = await apiRequests.post('/auth/register', payload);
+      const res = response.data;
+
+      if (res.success && res.data) {
+        const { channel, address } = res.data as { channel: 'email' | 'phone'; address: string };
+        setVerificationModal({
+          visible: true,
+          channel,
+          address,
+          message: res.message ?? '',
+        });
+      } else {
+        throw new Error(res.message || 'Registration failed');
       }
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || error.message || 'Registration failed. Please try again.';
       setServerError(errorMessage);
-      showErrorAlert('Registration Failed', errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -445,6 +452,18 @@ export default function RegisterScreen() {
           </View>
         </View>
       </KeyboardAvoidingWrapper>
+
+      <VerificationModal
+        visible={verificationModal.visible}
+        channel={verificationModal.channel}
+        address={verificationModal.address}
+        message={verificationModal.message}
+        onClose={() => setVerificationModal((prev) => ({ ...prev, visible: false }))}
+        onGoToLogin={() => {
+          setVerificationModal((prev) => ({ ...prev, visible: false }));
+          router.replace('/(auth)/login');
+        }}
+      />
     </SafeAreaView>
   );
 }
