@@ -27,9 +27,9 @@ export default function AccountScreen() {
 
   const menuSections = [
     {
-      title: 'Profile',
+      title: 'Account',
       items: [
-        { label: 'Edit Profile', route: '/(account)/profile', icon: '👤' },
+        { label: 'My Profile', route: '/(account)/profile', icon: '👤' },
         { label: 'Saved Addresses', route: '/(account)/addresses', icon: '📍' },
       ],
     },
@@ -50,6 +50,12 @@ export default function AccountScreen() {
       items: [
         { label: 'Help & Support', route: '/(account)/help', icon: '❓' },
         { label: 'Terms & Privacy', route: '/(account)/terms', icon: '📄' },
+      ],
+    },
+    {
+      title: 'Account Settings',
+      items: [
+        { label: 'Account Settings', route: '/(account)/account-settings', icon: '⚙️' },
       ],
     },
   ];
@@ -95,7 +101,7 @@ export default function AccountScreen() {
         ))}
 
         {/* Logout Button */}
-        <View className="px-6 py-8">
+        <View className="px-6 pt-4 pb-2">
           <TouchableOpacity
             onPress={handleLogout}
             className="bg-red-50 py-4 rounded-xl items-center border border-red-200"
