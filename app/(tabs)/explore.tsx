@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState } from 'react';
+﻿import { useEffect, useCallback, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,137 +6,181 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   TextInput,
-  ScrollView,
   RefreshControl,
+  Modal,
+  KeyboardAvoidingView,
   Platform,
+  StyleSheet,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useAppDispatch, useAppSelector } from '@/src/store/hooks';
-import {
-  setProviders,
-  appendProviders,
-  setProvidersLoading,
-  setProvidersLoadingMore,
-  setProvidersError,
-  setPagination,
-  setExploreFilters,
-  resetExploreFilters,
-  clearProviders,
-} from '@/src/store/slices/providersSlice';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { apiRequests } from '@/src/utils/apiRequests';
-import type { ProviderListItem, Service } from '@/src/types';
 import { useDebounce } from '@/src/hooks';
-import { ServiceCategorySelector } from '@/src/componets/modals/ServiceCategorySelector';
+import SvgIcon from '@/src/componets/common/SvgIcon';
 
-const PAGE_LIMIT = 20;
+const ORANGE = '#F57C1F';
 
-// ─── Provider Card ────────────────────────────────────────────────────────────
-function ProviderCard({
-  provider,
-  onPress,
+interface Group {
+  id: string;
+  name: string;
+  description: string;
+  icon_url: string;
+  sort_order: number;
+}
+
+interface ServiceResult {
+  id: string;
+  name: string;
+  description: string;
+  icon_url: string;
+  sort_order: number;
+  category_id: string;
+  category_name: string;
+  group_id: string;
+  group_name: string;
+}
+
+// ─── Service Search Modal ─────────────────────────────────────────────────────
+function ServiceSearchModal({
+  visible,
+  onClose,
+  onSelectService,
 }: {
-  provider: ProviderListItem;
-  onPress: () => void;
+  visible: boolean;
+  onClose: () => void;
+  onSelectService: (service: ServiceResult) => void;
 }) {
-  const initials = provider.business_name
-    .split(' ')
-    .slice(0, 2)
-    .map((w) => w.charAt(0).toUpperCase())
-    .join('');
+  const insets = useSafeAreaInsets();
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<ServiceResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const inputRef = useRef<TextInput>(null);
+  const debouncedQuery = useDebounce(query, 350);
+
+  useEffect(() => {
+    if (!visible) { setQuery(''); setResults([]); }
+    else { setTimeout(() => inputRef.current?.focus(), 200); }
+  }, [visible]);
+
+  useEffect(() => {
+    if (!debouncedQuery.trim()) { setResults([]); return; }
+    let cancelled = false;
+    setIsSearching(true);
+    apiRequests
+      .get('/client/services', { query: debouncedQuery.trim(), limit: 10 })
+      .then((res) => {
+        if (!cancelled && res.data.success) setResults(res.data.data ?? []);
+      })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setIsSearching(false); });
+    return () => { cancelled = true; };
+  }, [debouncedQuery]);
 
   return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.85}
-      className="bg-white dark:bg-[#1E293B] rounded-2xl mb-4 shadow-sm border border-gray-100 dark:border-[#334155] overflow-hidden"
-    >
-      {/* Top row */}
-      <View className="flex-row items-center p-4">
-        <View className="w-14 h-14 rounded-full bg-blue-100 dark:bg-blue-900 items-center justify-center mr-4 flex-shrink-0">
-          <Text className="text-primary-600 dark:text-primary-300 font-bold text-lg">
-            {initials}
-          </Text>
-        </View>
-
-        <View className="flex-1 min-w-0">
-          <Text
-            className="text-base font-bold text-gray-900 dark:text-white"
-            numberOfLines={1}
-          >
-            {provider.business_name}
-          </Text>
-
-          <Text className="text-sm text-gray-500 dark:text-gray-400 mt-0.5" numberOfLines={1}>
-            {provider.city}
-          </Text>
-
-          <View className="flex-row items-center mt-1.5">
-            <Text className="text-yellow-400 text-xs mr-0.5">★</Text>
-            <Text className="text-xs text-gray-700 dark:text-gray-300 font-medium">
-              {provider.average_rating?.toFixed(1) ?? '0.0'}
-            </Text>
-            <Text className="text-xs text-gray-400 dark:text-gray-500 ml-1">
-              ({provider.total_reviews ?? 0} reviews)
-            </Text>
-            {provider.distance != null && provider.distance > 0 && (
-              <Text className="text-xs text-gray-400 ml-3">
-                {provider.distance < 1
-                  ? `${(provider.distance * 1000).toFixed(0)} m away`
-                  : `${provider.distance.toFixed(1)} km away`}
-              </Text>
+    <Modal visible={visible} animationType="slide" statusBarTranslucent>
+      <KeyboardAvoidingView
+        style={{ flex: 1, backgroundColor: '#F9FAFB' }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        {/* Header */}
+        <View style={[styles.searchHeader, { paddingTop: insets.top + 8 }]}>
+          <View style={styles.searchInputRow}>
+            <Ionicons name="search" size={20} color="#9CA3AF" style={{ marginRight: 8 }} />
+            <TextInput
+              ref={inputRef}
+              style={styles.searchInput}
+              placeholder="What service do you need?"
+              placeholderTextColor="#9CA3AF"
+              value={query}
+              onChangeText={setQuery}
+              returnKeyType="search"
+              autoCorrect={false}
+            />
+            {query.length > 0 && (
+              <TouchableOpacity onPress={() => setQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Ionicons name="close-circle" size={18} color="#9CA3AF" />
+              </TouchableOpacity>
             )}
           </View>
+          <TouchableOpacity onPress={onClose} style={styles.cancelBtn}>
+            <Text style={styles.cancelText}>Cancel</Text>
+          </TouchableOpacity>
         </View>
-      </View>
 
-      {/* Description */}
-      {provider.business_description && (
-        <View className="px-4 pb-3">
-          <Text className="text-sm text-gray-600 dark:text-gray-400" numberOfLines={2}>
-            {provider.business_description}
-          </Text>
-        </View>
-      )}
-
-      {/* Footer */}
-      <View className="border-t border-gray-100 dark:border-[#334155] px-4 py-2.5 flex-row items-center justify-between">
-        <Text className="text-xs text-gray-400 dark:text-gray-500">
-          {provider.address}
-        </Text>
-        <View className="flex-row items-center gap-1">
-          <Text className="text-primary-600 dark:text-primary-300 text-xs font-semibold">
-            View Profile
-          </Text>
-          <Text className="text-primary-500 dark:text-primary-300 text-base">›</Text>
-        </View>
-      </View>
-    </TouchableOpacity>
+        {/* Results */}
+        {isSearching ? (
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+            <ActivityIndicator color={ORANGE} />
+            <Text style={{ color: '#9CA3AF', marginTop: 10, fontSize: 13 }}>Searching...</Text>
+          </View>
+        ) : query.trim() === '' ? (
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 }}>
+            <Text style={{ fontSize: 40, marginBottom: 12 }}>🔍</Text>
+            <Text style={{ fontSize: 16, fontWeight: '600', color: '#374151', textAlign: 'center' }}>
+              Start typing to search services
+            </Text>
+            <Text style={{ fontSize: 13, color: '#9CA3AF', textAlign: 'center', marginTop: 6 }}>
+              e.g. "plumbing", "cleaning", "tutoring"
+            </Text>
+          </View>
+        ) : results.length === 0 ? (
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 }}>
+            <Text style={{ fontSize: 40, marginBottom: 12 }}>😕</Text>
+            <Text style={{ fontSize: 16, fontWeight: '600', color: '#374151', textAlign: 'center' }}>
+              No services found
+            </Text>
+            <Text style={{ fontSize: 13, color: '#9CA3AF', textAlign: 'center', marginTop: 6 }}>
+              Try a different keyword
+            </Text>
+          </View>
+        ) : (
+          <FlatList
+            data={results}
+            keyExtractor={(item) => item.id}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 24 }}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                onPress={() => onSelectService(item)}
+                activeOpacity={0.8}
+                style={styles.serviceResultCard}
+              >
+                <View style={styles.serviceResultIcon}>
+                  <SvgIcon uri={item.icon_url} size={30} fallback="⚙️" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.serviceResultName} numberOfLines={1}>{item.name}</Text>
+                  <Text style={styles.serviceResultDesc} numberOfLines={2}>{item.description}</Text>
+                  <Text style={styles.serviceResultMeta} numberOfLines={1}>
+                    {item.category_name}  ·  {item.group_name}
+                  </Text>
+                </View>
+                <View style={styles.findBadge}>
+                  <Text style={styles.findBadgeText}>Find</Text>
+                </View>
+              </TouchableOpacity>
+            )}
+          />
+        )}
+      </KeyboardAvoidingView>
+    </Modal>
   );
 }
 
-// ─── Sort Chip ────────────────────────────────────────────────────────────────
-function SortChip({
-  label,
-  active,
-  onPress,
-}: {
-  label: string;
-  active: boolean;
-  onPress: () => void;
-}) {
+// ─── Group Card ───────────────────────────────────────────────────────────────
+function GroupCard({ group, onPress }: { group: Group; onPress: () => void }) {
   return (
     <TouchableOpacity
       onPress={onPress}
-      activeOpacity={0.75}
-      className={`mr-2 px-4 py-2 rounded-full border ${
-        active
-          ? 'bg-primary-500 border-primary-500'
-          : 'bg-white dark:bg-[#1E293B] border-gray-200 dark:border-[#334155]'
-      }`}
+      activeOpacity={0.8}
+      className="flex-1 m-2 bg-white rounded-2xl p-4 shadow-sm border border-gray-100 items-center min-h-[120px] justify-center"
     >
-      <Text className={`text-sm font-medium ${active ? 'text-white' : 'text-gray-600 dark:text-gray-300'}`}>
-        {label}
+      <View className="w-14 h-14 rounded-xl bg-blue-50 items-center justify-center mb-3">
+        <SvgIcon uri={group.icon_url} size={36} fallback="🛠️" />
+      </View>
+      <Text className="text-sm font-semibold text-gray-800 text-center leading-4" numberOfLines={2}>
+        {group.name}
       </Text>
     </TouchableOpacity>
   );
@@ -145,528 +189,257 @@ function SortChip({
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function ExploreScreen() {
   const router = useRouter();
-  const dispatch = useAppDispatch();
-
-  const params = useLocalSearchParams<{
-    serviceId?: string;
-    serviceName?: string;
-    categoryId?: string;
-    categoryName?: string;
-  }>();
-
-  const providers = useAppSelector((s) => s.providers.providers);
-  const isLoading = useAppSelector((s) => s.providers.isLoading);
-  const isLoadingMore = useAppSelector((s) => s.providers.isLoadingMore);
-  const error = useAppSelector((s) => s.providers.error);
-  const pagination = useAppSelector((s) => s.providers.pagination);
-  const filters = useAppSelector((s) => s.providers.exploreFilters);
-  const categories = useAppSelector((s) => s.categories.categories);
-
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [searchInput, setSearchInput] = useState('');
-  const [showCategoryModal, setShowCategoryModal] = useState(false);
-  const [showServiceModal, setShowServiceModal] = useState(false);
-  const [services, setServices] = useState<Service[]>([]);
-  const [loadingServices, setLoadingServices] = useState(false);
+  const [error, setError] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
 
-  const debouncedSearch = useDebounce(searchInput, 500);
-
-  // Build query params object from filters + page
-  const buildQueryParams = useCallback(
-    (page: number) => {
-      const params: any = {
-        page,
-        limit: PAGE_LIMIT,
-      };
-
-      if (filters.search?.trim()) params.search = filters.search.trim();
-      if (filters.categoryId) params.categoryId = filters.categoryId;
-      if (filters.serviceId) params.serviceId = filters.serviceId;
-      if (filters.location?.trim()) params.location = filters.location.trim();
-      if (filters.sortBy) params.sortBy = filters.sortBy;
-      if (filters.latitude) params.latitude = filters.latitude;
-      if (filters.longitude) params.longitude = filters.longitude;
-
-      return params;
-    },
-    [filters]
-  );
-
-  // Fetch page 1 (resets list)
-  const fetchPage1 = useCallback(async () => {
-    dispatch(setProvidersLoading(true));
-    dispatch(setProvidersError(null));
+  const fetchGroups = useCallback(async () => {
+    setError('');
     try {
-      const res = await apiRequests.get('/client/providers', buildQueryParams(1));
+      const res = await apiRequests.get('/client/groups');
       if (res.data.success) {
-        const data: ProviderListItem[] = res.data.data?.data ?? [];
-        const paginationData = res.data.data?.pagination ?? {};
-
-        dispatch(setProviders(data));
-        dispatch(
-          setPagination({
-            page: paginationData.current_page ?? 1,
-            totalPages: paginationData.total_pages ?? 1,
-            total: paginationData.total ?? data.length,
-            hasMore: (paginationData.current_page ?? 1) < (paginationData.total_pages ?? 1),
-          })
-        );
+        const data = res.data.data as Group[];
+        setGroups([...data].sort((a, b) => a.sort_order - b.sort_order));
       } else {
-        dispatch(setProvidersError(res.data.message || 'Failed to load providers'));
+        setError(res.data.message || 'Failed to load services');
       }
     } catch (err: any) {
-      dispatch(
-        setProvidersError(
-          err.response?.data?.message || 'Could not load providers. Please try again.'
-        )
-      );
+      setError(err.response?.data?.message || 'Could not load services. Please try again.');
     } finally {
-      dispatch(setProvidersLoading(false));
-    }
-  }, [dispatch, buildQueryParams]);
-
-  // Fetch next page (appends to list)
-  const fetchNextPage = useCallback(async () => {
-    if (isLoadingMore || !pagination.hasMore) return;
-    const nextPage = pagination.page + 1;
-    dispatch(setProvidersLoadingMore(true));
-    try {
-      const res = await apiRequests.get('/client/providers', buildQueryParams(nextPage));
-      if (res.data.success) {
-        const data: ProviderListItem[] = res.data.data?.data ?? [];
-        const paginationData = res.data.data?.pagination ?? {};
-
-        dispatch(appendProviders(data));
-        dispatch(
-          setPagination({
-            page: paginationData.current_page ?? nextPage,
-            totalPages: paginationData.total_pages ?? pagination.totalPages,
-            total: paginationData.total ?? pagination.total,
-            hasMore: (paginationData.current_page ?? nextPage) < (paginationData.total_pages ?? pagination.totalPages),
-          })
-        );
-      }
-    } catch {
-      // silently fail; user can tap Load More
-    } finally {
-      dispatch(setProvidersLoadingMore(false));
-    }
-  }, [dispatch, buildQueryParams, isLoadingMore, pagination]);
-
-  // Load services for service filter
-  const loadServices = useCallback(async () => {
-    setLoadingServices(true);
-    try {
-      const res = await apiRequests.get('/client/services');
-      if (res.data.success) {
-        setServices(res.data.data ?? []);
-      }
-    } catch (err) {
-      console.error('Failed to load services:', err);
-    } finally {
-      setLoadingServices(false);
+      setIsLoading(false);
+      setRefreshing(false);
     }
   }, []);
 
-  // Init: apply URL params as initial filters then fetch
-  useEffect(() => {
-    const initFilters: Partial<typeof filters> = {};
-    let hasFilters = false;
+  useEffect(() => { fetchGroups(); }, [fetchGroups]);
 
-    if (params.categoryId) {
-      initFilters.categoryId = params.categoryId;
-      initFilters.categoryName = params.categoryName || null;
-      hasFilters = true;
-    }
-    if (params.serviceId) {
-      initFilters.serviceId = params.serviceId;
-      initFilters.serviceName = params.serviceName || null;
-      hasFilters = true;
-    }
+  const onRefresh = () => { setRefreshing(true); fetchGroups(); };
 
-    if (hasFilters) {
-      dispatch(setExploreFilters(initFilters));
-    }
-
-    fetchPage1();
-
-    return () => {
-      dispatch(clearProviders());
-      dispatch(resetExploreFilters());
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Re-fetch when debounced search or other filters change
-  useEffect(() => {
-    if (debouncedSearch !== filters.search) {
-      dispatch(setExploreFilters({ search: debouncedSearch }));
-    }
-  }, [debouncedSearch, dispatch, filters.search]);
-
-  useEffect(() => {
-    // Only fetch if filters have actually changed after initial load
-    if (providers.length > 0 || isLoading) {
-      fetchPage1();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.search, filters.categoryId, filters.serviceId, filters.location, filters.sortBy]);
-
-  // Handlers
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await fetchPage1();
-    setRefreshing(false);
+  const handleSelectService = (service: ServiceResult) => {
+    setShowSearch(false);
+    router.push({
+      pathname: '/(explore)/providers',
+      params: { service_id: service.id, service_name: service.name },
+    });
   };
 
-  const handleCategorySelect = (item: { id: string; name: string } | null) => {
-    dispatch(
-      setExploreFilters({
-        categoryId: item?.id || null,
-        categoryName: item?.name || null,
-      })
-    );
-  };
-
-  const handleServiceSelect = (item: { id: string; name: string } | null) => {
-    dispatch(
-      setExploreFilters({
-        serviceId: item?.id || null,
-        serviceName: item?.name || null,
-      })
-    );
-  };
-
-  const handleSortChange = (sortBy: typeof filters.sortBy) => {
-    dispatch(setExploreFilters({ sortBy }));
-  };
-
-  const handleClearAllFilters = () => {
-    setSearchInput('');
-    dispatch(resetExploreFilters());
-  };
-
-  const activeFilterCount = [
-    filters.categoryId,
-    filters.serviceId,
-    filters.location,
-    filters.search,
-  ].filter(Boolean).length;
-
-  // FlatList helpers
-  const renderItem = useCallback(
-    ({ item }: { item: ProviderListItem }) => (
-      <ProviderCard provider={item} onPress={() => router.push(`/(providers)/${item.id}/profile`)} />
-    ),
-    [router]
-  );
-  const keyExtractor = useCallback((item: ProviderListItem) => item.id, []);
-
-  // List footer
-  const ListFooter = () => {
-    if (isLoadingMore) {
-      return (
-        <View className="py-6 items-center">
-          <ActivityIndicator color="#2DA9E9" />
-          <Text className="text-sm text-gray-400 mt-2">Loading more...</Text>
-        </View>
-      );
-    }
-    if (pagination.hasMore && providers.length > 0) {
-      return (
-        <TouchableOpacity
-          onPress={fetchNextPage}
-          activeOpacity={0.8}
-          className="py-4 mb-6 bg-primary-50 dark:bg-[#1E293B] border border-primary-200 dark:border-[#334155] rounded-xl items-center"
-        >
-          <Text className="text-primary-600 dark:text-primary-300 font-semibold text-sm">
-            Load More Providers
-          </Text>
-          <Text className="text-gray-400 text-xs mt-0.5">
-            Showing {providers.length} of {pagination.total}
-          </Text>
-        </TouchableOpacity>
-      );
-    }
-    if (providers.length > 0) {
-      return (
-        <View className="py-6 items-center">
-          <Text className="text-gray-400 text-sm">
-            All {pagination.total} provider{pagination.total !== 1 ? 's' : ''} loaded
-          </Text>
-        </View>
-      );
-    }
-    return null;
-  };
-
-  // Empty state
-  const ListEmpty = () => {
-    if (isLoading) return null;
+  if (isLoading) {
     return (
-      <View className="items-center justify-center py-20 px-8">
-        <Text className="text-5xl mb-4">🔍</Text>
-        <Text className="text-gray-700 dark:text-gray-300 font-semibold text-lg text-center">
-          No providers found
-        </Text>
-        <Text className="text-gray-500 dark:text-gray-400 text-center mt-2 text-sm">
-          {activeFilterCount > 0
-            ? 'Try adjusting your filters to see more results'
-            : 'No providers are available yet.'}
-        </Text>
-        {activeFilterCount > 0 && (
-          <TouchableOpacity
-            onPress={handleClearAllFilters}
-            className="mt-4 bg-primary-500 px-6 py-3 rounded-full"
-          >
-            <Text className="text-white font-semibold text-sm">Clear All Filters</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+      <SafeAreaView className="flex-1 bg-gray-50 items-center justify-center">
+        <ActivityIndicator size="large" color="#2DA9E9" />
+        <Text className="text-gray-400 mt-3 text-sm">Loading services...</Text>
+      </SafeAreaView>
     );
-  };
-
-  // List header (filters)
-  const ListHeader = () => (
-    <View>
-      {/* Search bar */}
-      <View className="pt-3 pb-2">
-        <View className="flex-row items-center bg-gray-100 dark:bg-[#1E293B] rounded-xl px-4 py-3">
-          <Text className="text-gray-400 mr-2">🔍</Text>
-          <TextInput
-            className="flex-1 text-gray-900 dark:text-white text-base"
-            placeholder="Search by business name..."
-            placeholderTextColor="#9CA3AF"
-            value={searchInput}
-            onChangeText={setSearchInput}
-            returnKeyType="search"
-          />
-          {searchInput.length > 0 && (
-            <TouchableOpacity
-              onPress={() => setSearchInput('')}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Text className="text-gray-400 text-xl leading-none">×</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-
-      {/* Filter buttons: Category & Service */}
-      <View className="pb-2 flex-row gap-2">
-        <TouchableOpacity
-          onPress={() => setShowCategoryModal(true)}
-          activeOpacity={0.75}
-          className={`flex-1 flex-row items-center justify-center px-4 py-2.5 rounded-xl border ${
-            filters.categoryId
-              ? 'bg-primary-50 dark:bg-blue-900/20 border-primary-300 dark:border-blue-700'
-              : 'bg-gray-50 dark:bg-[#1E293B] border-gray-200 dark:border-[#334155]'
-          }`}
-        >
-          <Text className="text-base mr-2">📂</Text>
-          <Text
-            className={`text-sm font-medium ${
-              filters.categoryId
-                ? 'text-primary-700 dark:text-primary-300'
-                : 'text-gray-600 dark:text-gray-400'
-            }`}
-            numberOfLines={1}
-          >
-            {filters.categoryName || 'Category'}
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={() => {
-            if (services.length === 0) loadServices();
-            setShowServiceModal(true);
-          }}
-          activeOpacity={0.75}
-          className={`flex-1 flex-row items-center justify-center px-4 py-2.5 rounded-xl border ${
-            filters.serviceId
-              ? 'bg-primary-50 dark:bg-blue-900/20 border-primary-300 dark:border-blue-700'
-              : 'bg-gray-50 dark:bg-[#1E293B] border-gray-200 dark:border-[#334155]'
-          }`}
-        >
-          <Text className="text-base mr-2">🛠️</Text>
-          <Text
-            className={`text-sm font-medium ${
-              filters.serviceId
-                ? 'text-primary-700 dark:text-primary-300'
-                : 'text-gray-600 dark:text-gray-400'
-            }`}
-            numberOfLines={1}
-          >
-            {filters.serviceName || 'Service'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Sort chips */}
-      <View className="pb-2 -mx-4">
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 4 }}
-        >
-          <SortChip
-            label="Best Rating"
-            active={filters.sortBy === 'rating'}
-            onPress={() => handleSortChange(filters.sortBy === 'rating' ? null : 'rating')}
-          />
-          <SortChip
-            label="Most Reviews"
-            active={filters.sortBy === 'reviews'}
-            onPress={() => handleSortChange(filters.sortBy === 'reviews' ? null : 'reviews')}
-          />
-          <SortChip
-            label="Nearest"
-            active={filters.sortBy === 'distance'}
-            onPress={() => handleSortChange(filters.sortBy === 'distance' ? null : 'distance')}
-          />
-        </ScrollView>
-      </View>
-
-      {/* Active filter badges */}
-      {activeFilterCount > 0 && (
-        <View className="pb-3 flex-row flex-wrap gap-2">
-          {filters.categoryName && (
-            <View className="flex-row items-center bg-primary-100 dark:bg-blue-900/30 rounded-full px-3 py-1">
-              <Text className="text-primary-700 dark:text-primary-300 text-xs font-medium">
-                📂 {filters.categoryName}
-              </Text>
-              <TouchableOpacity
-                onPress={() => handleCategorySelect(null)}
-                className="ml-1"
-                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-              >
-                <Text className="text-primary-400 text-base">×</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-          {filters.serviceName && (
-            <View className="flex-row items-center bg-primary-100 dark:bg-blue-900/30 rounded-full px-3 py-1">
-              <Text className="text-primary-700 dark:text-primary-300 text-xs font-medium">
-                🛠️ {filters.serviceName}
-              </Text>
-              <TouchableOpacity
-                onPress={() => handleServiceSelect(null)}
-                className="ml-1"
-                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-              >
-                <Text className="text-primary-400 text-base">×</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-          {filters.location && (
-            <View className="flex-row items-center bg-primary-100 dark:bg-blue-900/30 rounded-full px-3 py-1">
-              <Text className="text-primary-700 dark:text-primary-300 text-xs font-medium">
-                📍 {filters.location}
-              </Text>
-            </View>
-          )}
-          {activeFilterCount > 0 && (
-            <TouchableOpacity
-              onPress={handleClearAllFilters}
-              className="flex-row items-center bg-gray-100 dark:bg-[#1E293B] rounded-full px-3 py-1"
-            >
-              <Text className="text-gray-600 dark:text-gray-400 text-xs font-medium">
-                Clear All
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
-
-      {/* Results count */}
-      <View className="pb-2">
-        <Text className="text-sm text-gray-400 dark:text-gray-500">
-          {isLoading
-            ? 'Searching...'
-            : `${pagination.total > 0 ? pagination.total : providers.length} provider${
-                (pagination.total || providers.length) !== 1 ? 's' : ''
-              } found`}
-        </Text>
-      </View>
-    </View>
-  );
-
-  const screenTitle = filters.serviceName || filters.categoryName || 'Explore Providers';
+  }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-[#0F172A]" edges={['top']}>
-      {/* Screen top header */}
-      <View className="px-4 pt-4 pb-3 bg-white dark:bg-[#0F172A] border-b border-gray-100 dark:border-[#1E293B]">
-        <Text className="text-2xl font-bold text-gray-900 dark:text-white" numberOfLines={1}>
-          {screenTitle}
-        </Text>
-        <Text className="text-gray-500 dark:text-gray-400 text-sm mt-0.5">
-          Find the right service provider for your needs
-        </Text>
+    <SafeAreaView className="flex-1 bg-gray-50">
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.headerTitle}>Find a Service</Text>
+          <Text style={styles.headerSubtitle}>
+            Browse categories or search for what you need
+          </Text>
+        </View>
       </View>
 
-      {/* Full-screen initial loader */}
-      {isLoading && providers.length === 0 ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#2DA9E9" />
-          <Text className="text-gray-500 dark:text-gray-400 mt-3 text-sm">
-            Loading providers...
-          </Text>
+      {/* Search tap target */}
+      <TouchableOpacity
+        onPress={() => setShowSearch(true)}
+        activeOpacity={0.85}
+        style={styles.searchTrigger}
+      >
+        <Ionicons name="search" size={18} color="#9CA3AF" />
+        <Text style={styles.searchTriggerText}>Search any service...</Text>
+        <View style={styles.searchTriggerBadge}>
+          <Text style={styles.searchTriggerBadgeText}>Search</Text>
         </View>
-      ) : error && providers.length === 0 ? (
-        <View className="flex-1 items-center justify-center px-8">
-          <Text className="text-5xl mb-4">⚠️</Text>
-          <Text className="text-gray-700 dark:text-gray-300 font-semibold text-center mb-2">
-            {error}
-          </Text>
-          <TouchableOpacity
-            onPress={() => fetchPage1()}
-            className="mt-4 bg-primary-500 px-6 py-3 rounded-full"
-          >
-            <Text className="text-white font-semibold">Retry</Text>
+      </TouchableOpacity>
+
+      {error ? (
+        <View className="mx-5 mt-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+          <Text className="text-red-600 text-sm text-center">{error}</Text>
+          <TouchableOpacity onPress={fetchGroups} className="mt-2">
+            <Text className="text-red-700 font-semibold text-sm text-center">Retry</Text>
           </TouchableOpacity>
         </View>
-      ) : (
-        <FlatList
-          data={providers}
-          renderItem={renderItem}
-          keyExtractor={keyExtractor}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32 }}
-          ListHeaderComponent={<ListHeader />}
-          ListEmptyComponent={<ListEmpty />}
-          ListFooterComponent={<ListFooter />}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#2DA9E9" />
-          }
-          onEndReached={pagination.hasMore ? fetchNextPage : undefined}
-          onEndReachedThreshold={0.3}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        />
-      )}
+      ) : null}
 
-      {/* Category selector modal */}
-      <ServiceCategorySelector
-        visible={showCategoryModal}
-        onClose={() => setShowCategoryModal(false)}
-        onSelect={handleCategorySelect}
-        items={categories}
-        selectedId={filters.categoryId}
-        title="Select Category"
-        placeholder="Search categories..."
+      <FlatList
+        data={groups}
+        keyExtractor={(item) => item.id}
+        numColumns={2}
+        contentContainerStyle={{ padding: 8, paddingBottom: 40 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#2DA9E9" />
+        }
+        renderItem={({ item }) => (
+          <GroupCard
+            group={item}
+            onPress={() =>
+              router.push({
+                pathname: '/(explore)/categories',
+                params: { group_id: item.id, group_name: item.name },
+              })
+            }
+          />
+        )}
+        ListEmptyComponent={
+          <View className="items-center justify-center py-20">
+            <Text className="text-5xl mb-3">🔍</Text>
+            <Text className="text-gray-500 font-medium">No service types available</Text>
+          </View>
+        }
       />
 
-      {/* Service selector modal */}
-      <ServiceCategorySelector
-        visible={showServiceModal}
-        onClose={() => setShowServiceModal(false)}
-        onSelect={handleServiceSelect}
-        items={services}
-        selectedId={filters.serviceId}
-        title="Select Service"
-        placeholder="Search services..."
-        isLoading={loadingServices}
+      <ServiceSearchModal
+        visible={showSearch}
+        onClose={() => setShowSearch(false)}
+        onSelectService={handleSelectService}
       />
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  header: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#111827',
+  },
+  headerSubtitle: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  searchTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 4,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  searchTriggerText: {
+    flex: 1,
+    marginLeft: 10,
+    fontSize: 14,
+    color: '#9CA3AF',
+  },
+  searchTriggerBadge: {
+    backgroundColor: ORANGE,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+  searchTriggerBadgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  searchHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  searchInputRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    color: '#111827',
+  },
+  cancelBtn: {
+    marginLeft: 12,
+    paddingVertical: 4,
+  },
+  cancelText: {
+    fontSize: 15,
+    color: ORANGE,
+    fontWeight: '600',
+  },
+  serviceResultCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  serviceResultIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 12,
+    backgroundColor: '#FFF7ED',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+    flexShrink: 0,
+  },
+  serviceResultName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  serviceResultDesc: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 2,
+    lineHeight: 16,
+  },
+  serviceResultMeta: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    marginTop: 4,
+  },
+  findBadge: {
+    backgroundColor: ORANGE,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    marginLeft: 10,
+    flexShrink: 0,
+  },
+  findBadgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+});

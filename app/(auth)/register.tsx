@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -17,7 +17,6 @@ import { validateEmail, validatePhone, validateName, validatePassword, validateC
 import { signInWithGoogle } from '../../src/utils/googleAuth';
 import KeyboardAvoidingWrapper from '@/src/componets/common/KeyboardAvoidingWrapper';
 import { apiRequests } from '@/src/utils/apiRequests';
-import VerificationModal from '@/src/componets/modals/VerificationModal';
 
 type TabType = 'email' | 'phone';
 
@@ -34,14 +33,6 @@ export default function RegisterScreen() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-
-  // Verification modal state
-  const [verificationModal, setVerificationModal] = useState<{
-    visible: boolean;
-    channel: 'email' | 'phone';
-    address: string;
-    message: string;
-  }>({ visible: false, channel: 'email', address: '', message: '' });
 
   // Error states
   const [fullNameError, setFullNameError] = useState('');
@@ -157,12 +148,10 @@ export default function RegisterScreen() {
       const res = response.data;
 
       if (res.success && res.data) {
-        const { channel, address } = res.data as { channel: 'email' | 'phone'; address: string };
-        setVerificationModal({
-          visible: true,
-          channel,
-          address,
-          message: res.message ?? '',
+        const { channel, address, temp_token } = res.data as { channel: 'email' | 'phone'; address: string; temp_token: string };
+        router.push({
+          pathname: '/(auth)/verify-email',
+          params: { token: temp_token, address, channel },
         });
       } else {
         throw new Error(res.message || 'Registration failed');
@@ -186,8 +175,12 @@ export default function RegisterScreen() {
           className="px-6 pt-8 pb-12 rounded-b-[40px]"
         >
           <View className="items-center mt-4">
-            <View className="w-20 h-20 bg-white/20 rounded-2xl items-center justify-center mb-4">
-              <Text className="text-white text-3xl font-bold">LS</Text>
+            <View className="w-20 h-20 bg-white rounded-2xl items-center justify-center mb-4 shadow-sm" style={{ borderWidth: 2, borderColor: 'rgba(255,255,255,0.6)' }}>
+              <Image
+                source={require('../../assets/icon.png')}
+                style={{ width: 64, height: 64, borderRadius: 12 }}
+                resizeMode="contain"
+              />
             </View>
             <Text className="text-white text-2xl font-bold">Create Account</Text>
             <Text className="text-white/80 text-sm mt-1">Sign up to get started</Text>
@@ -214,7 +207,7 @@ export default function RegisterScreen() {
                   setPhoneError('');
                 }}
                 className={`flex-1 py-3 rounded-full flex-row items-center justify-center ${
-                  activeTab === 'email' ? 'bg-primary-500' : ''
+                  activeTab === 'email' ? 'bg-tertiary-500' : ''
                 }`}
               >
                 <EnvelopeIcon size={18} color={activeTab === 'email' ? '#FFF' : '#6B7280'} />
@@ -232,7 +225,7 @@ export default function RegisterScreen() {
                   setPhoneError('');
                 }}
                 className={`flex-1 py-3 rounded-full flex-row items-center justify-center ${
-                  activeTab === 'phone' ? 'bg-primary-500' : ''
+                  activeTab === 'phone' ? 'bg-tertiary-500' : ''
                 }`}
               >
                 <PhoneIcon size={18} color={activeTab === 'phone' ? '#FFF' : '#6B7280'} />
@@ -415,7 +408,7 @@ export default function RegisterScreen() {
               activeOpacity={0.8}
             >
               <LinearGradient
-                colors={isLoading ? ['#9CA3AF', '#6B7280'] : ['#2DA9E9', '#1E88E5']}
+                colors={isLoading ? ['#9CA3AF', '#6B7280'] : ['#F57C1F', '#E65100']}
                 className="py-4 rounded-full items-center shadow-lg"
               >
                 {isLoading ? (
@@ -447,23 +440,12 @@ export default function RegisterScreen() {
               Already have an account?{' '}
             </Text>
             <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
-              <Text className="text-primary-500 font-bold">Login</Text>
+              <Text className="text-tertiary-500 font-bold">Login</Text>
             </TouchableOpacity>
           </View>
         </View>
       </KeyboardAvoidingWrapper>
 
-      <VerificationModal
-        visible={verificationModal.visible}
-        channel={verificationModal.channel}
-        address={verificationModal.address}
-        message={verificationModal.message}
-        onClose={() => setVerificationModal((prev) => ({ ...prev, visible: false }))}
-        onGoToLogin={() => {
-          setVerificationModal((prev) => ({ ...prev, visible: false }));
-          router.replace('/(auth)/login');
-        }}
-      />
     </SafeAreaView>
   );
 }

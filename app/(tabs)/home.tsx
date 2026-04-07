@@ -75,22 +75,28 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Call to Action Buttons */}
+        {/* Call to Action — Find a Service */}
         <View className="px-6 pt-4 pb-6 bg-white mb-4">
-          <View className="flex-row gap-4">
-            <TouchableOpacity
-              onPress={() => router.push('/(service-request)/create')}
-              className="flex-1 bg-primary-500 py-4 rounded-xl items-center"
+          <TouchableOpacity
+            onPress={() => router.push('/(tabs)/explore')}
+            activeOpacity={0.85}
+            className="rounded-2xl overflow-hidden"
+          >
+            <View
+              className="py-5 px-6 flex-row items-center"
+              style={{ backgroundColor: '#F57C1F' }}
             >
-              <Text className="text-white font-semibold text-base">📝 Post Request</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => router.push('/(tabs)/explore')}
-              className="flex-1 bg-gray-900 py-4 rounded-xl items-center"
-            >
-              <Text className="text-white font-semibold text-base">🔍 Find Provider</Text>
-            </TouchableOpacity>
-          </View>
+              <View className="flex-1">
+                <Text className="text-white font-bold text-lg">Find a Service</Text>
+                <Text className="text-white/80 text-sm mt-0.5">
+                  Browse providers across 18+ service types
+                </Text>
+              </View>
+              <View className="w-12 h-12 rounded-full bg-white/20 items-center justify-center ml-4">
+                <Text className="text-2xl">🔍</Text>
+              </View>
+            </View>
+          </TouchableOpacity>
         </View>
 
         {/* Dashboard Summary Cards */}
@@ -102,8 +108,8 @@ export default function HomeScreen() {
               </Text>
               <Text className="text-gray-700 font-medium">Active Requests</Text>
             </View>
-            <View className="flex-1 bg-green-50 rounded-xl p-4">
-              <Text className="text-3xl font-bold text-green-600 mb-1">
+            <View className="flex-1 rounded-xl p-4" style={{ backgroundColor: '#FFF7ED' }}>
+              <Text className="text-3xl font-bold mb-1" style={{ color: '#F57C1F' }}>
                 {dashboardSummary?.active_bookings_count || 0}
               </Text>
               <Text className="text-gray-700 font-medium">Active Bookings</Text>
@@ -239,12 +245,12 @@ export default function HomeScreen() {
               onPress={() => router.push('/(tabs)/explore')}
               className="bg-white rounded-xl p-5 shadow-sm flex-row items-center"
             >
-              <View className="w-12 h-12 bg-purple-100 rounded-full items-center justify-center mr-4">
+              <View className="w-12 h-12 rounded-full items-center justify-center mr-4" style={{ backgroundColor: '#FFF7ED' }}>
                 <Text className="text-2xl">🔍</Text>
               </View>
               <View className="flex-1">
-                <Text className="font-bold text-gray-900 text-base">Browse Providers</Text>
-                <Text className="text-gray-600 text-sm">Find service providers near you</Text>
+                <Text className="font-bold text-gray-900 text-base">Find a Service</Text>
+                <Text className="text-gray-600 text-sm">Browse providers near you</Text>
               </View>
               <Text className="text-gray-400 text-xl">›</Text>
             </TouchableOpacity>

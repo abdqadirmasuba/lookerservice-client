@@ -30,6 +30,7 @@ export default function RootLayout() {
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="(providers)" />
+          <Stack.Screen name="(explore)" />
           <Stack.Screen name="(service-request)" />
           <Stack.Screen name="(bookings)" />
         </Stack>

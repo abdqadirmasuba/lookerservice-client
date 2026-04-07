@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "lookerservice-client",
+    "name": "Looker Service",
     "slug": "lookerservice-client",
     "scheme": "lookerservice",
     "version": "1.0.0",
@@ -23,7 +23,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.lookerserviceclient"
+      "package": "com.lookerservice.client"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -33,6 +33,7 @@
         "projectId": "92c49ec4-4df5-4a2f-a626-5d9f8bac32da"
       }
     },
+    "owner": "lookerservice",
     "plugins": [
       "expo-router",
       "@react-native-community/datetimepicker",
@@ -41,7 +42,8 @@
         {
           "iosUrlScheme": "com.googleusercontent.apps._some_id_here_"
         }
-      ]
+      ],
+      "expo-font"
     ]
   }
 }

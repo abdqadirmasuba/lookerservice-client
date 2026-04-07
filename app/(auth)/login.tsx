@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -25,7 +25,7 @@ type TabType = 'email' | 'phone';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { verified } = useLocalSearchParams<{ verified?: string }>();
+  const { verified, message } = useLocalSearchParams<{ verified?: string; message?: string }>();
   const dispatch = useAppDispatch();
   const [activeTab, setActiveTab] = useState<TabType>('email');
   const [email, setEmail] = useState('');
@@ -186,8 +186,12 @@ export default function LoginScreen() {
           className="px-6 pt-8 pb-12 rounded-b-[40px]"
         >
           <View className="items-center mt-4">
-            <View className="w-20 h-20 bg-white/20 rounded-2xl items-center justify-center mb-4">
-              <Text className="text-white text-3xl font-bold">LS</Text>
+            <View className="w-20 h-20 bg-white rounded-2xl items-center justify-center mb-4 shadow-sm" style={{ borderWidth: 2, borderColor: 'rgba(255,255,255,0.6)' }}>
+              <Image
+                source={require('../../assets/icon.png')}
+                style={{ width: 64, height: 64, borderRadius: 12 }}
+                resizeMode="contain"
+              />
             </View>
             <Text className="text-white text-2xl font-bold">Welcome Back</Text>
             <Text className="text-white/80 text-sm mt-1">Sign in to continue</Text>
@@ -201,7 +205,7 @@ export default function LoginScreen() {
             {/* Verified Success Banner */}
             {verified === 'true' ? (
               <View className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 mb-4">
-                <Text className="text-green-700 text-center font-medium text-sm">✅ Account verified! You can now log in.</Text>
+                <Text className="text-green-700 text-center font-medium text-sm">✅ {message || 'Account verified! You can now log in.'}</Text>
               </View>
             ) : null}
 
@@ -222,7 +226,7 @@ export default function LoginScreen() {
                   setServerError('');
                 }}
                 className={`flex-1 py-3 rounded-full flex-row items-center justify-center ${
-                  activeTab === 'email' ? 'bg-primary-500' : ''
+                  activeTab === 'email' ? 'bg-tertiary-500' : ''
                 }`}
               >
                 <EnvelopeIcon size={18} color={activeTab === 'email' ? '#FFF' : '#6B7280'} />
@@ -241,7 +245,7 @@ export default function LoginScreen() {
                   setServerError('');
                 }}
                 className={`flex-1 py-3 rounded-full flex-row items-center justify-center ${
-                  activeTab === 'phone' ? 'bg-primary-500' : ''
+                  activeTab === 'phone' ? 'bg-tertiary-500' : ''
                 }`}
               >
                 <PhoneIcon size={18} color={activeTab === 'phone' ? '#FFF' : '#6B7280'} />
@@ -356,7 +360,7 @@ export default function LoginScreen() {
               onPress={() => router.push('/(auth)/forgot-password')}
               className="items-end mb-6"
             >
-              <Text className="text-primary-500 font-medium">Forgot Password?</Text>
+              <Text className="text-tertiary-500 font-medium">Forgot Password?</Text>
             </TouchableOpacity>
 
             {/* Login Button */}
@@ -366,7 +370,7 @@ export default function LoginScreen() {
               activeOpacity={0.8}
             >
               <LinearGradient
-                colors={isLoading ? ['#9CA3AF', '#6B7280'] : ['#2DA9E9', '#1E88E5']}
+                colors={isLoading ? ['#9CA3AF', '#6B7280'] : ['#F57C1F', '#E65100']}
                 className="py-4 rounded-full items-center shadow-lg"
               >
                 {isLoading ? (
@@ -405,7 +409,7 @@ export default function LoginScreen() {
               Don't have an account?{' '}
             </Text>
             <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
-              <Text className="text-primary-500 font-bold">Sign Up</Text>
+              <Text className="text-tertiary-500 font-bold">Sign Up</Text>
             </TouchableOpacity>
           </View>
         </View>
