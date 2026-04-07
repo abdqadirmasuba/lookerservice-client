@@ -35,6 +35,8 @@ export interface ProviderDetailsResponse {
   state_region: string;
   country: string;
   postal_code: string;
+  service_delivery_type: string;
+  business_hours: Array<{ day: string; status: string }>;
   contact_info: {
     full_name: string;
     email: string;

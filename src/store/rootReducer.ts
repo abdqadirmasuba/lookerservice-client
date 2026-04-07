@@ -5,7 +5,6 @@ import searchReducer from './slices/searchSlice';
 import providersReducer from './slices/providersSlice';
 import categoriesReducer from './slices/categoriesSlice';
 import requestsReducer from './slices/requestsSlice';
-import serviceRequestFormReducer from './slices/serviceRequestFormSlice';
 import bidsReducer from './slices/bidsSlice';
 import bookingsReducer from './slices/bookingsSlice';
 import messagesReducer from './slices/messagesSlice';
@@ -20,7 +19,6 @@ const rootReducer = combineReducers({
   providers: providersReducer,
   categories: categoriesReducer,
   requests: requestsReducer,
-  serviceRequestForm: serviceRequestFormReducer,
   bids: bidsReducer,
   bookings: bookingsReducer,
   messages: messagesReducer,

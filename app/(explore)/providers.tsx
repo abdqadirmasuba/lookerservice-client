@@ -384,7 +384,12 @@ export default function ProvidersScreen() {
           renderItem={({ item }) => (
             <ProviderCard
               provider={item}
-              onPress={() => router.push(`/(providers)/${item.id}/profile`)}
+              onPress={() =>
+                router.push({
+                  pathname: '/(providers)/[id]/request',
+                  params: { id: item.id, service_id: service_id },
+                })
+              }
             />
           )}
           onEndReached={loadMore}

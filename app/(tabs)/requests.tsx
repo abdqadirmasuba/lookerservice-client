@@ -148,7 +148,7 @@ export default function RequestsScreen() {
               </Text>
               {activeTab === 'active' && (
                 <TouchableOpacity
-                  onPress={() => router.push('/(service-request)/create/index')}
+                  onPress={() => router.push('/(tabs)/explore')}
                   className="bg-primary-500 px-6 py-3 rounded-lg mt-4"
                 >
                   <Text className="text-white font-semibold">Create Request</Text>
@@ -268,7 +268,7 @@ export default function RequestsScreen() {
 
       {/* FAB */}
       <TouchableOpacity
-        onPress={() => router.push('/(service-request)/create')}
+        onPress={() => router.push('/(tabs)/explore')}
         className="absolute bottom-6 right-6 bg-primary-500 w-16 h-16 rounded-full items-center justify-center shadow-lg"
       >
         <Text className="text-white text-3xl">+</Text>
