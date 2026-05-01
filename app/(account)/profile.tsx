@@ -6,12 +6,16 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
+  Alert,
+  Image,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAppSelector, useAppDispatch } from '../../src/store/hooks';
-import { updateUser } from '../../src/store/slices/userSlice';
+import { updateUser, updateProfileImage } from '../../src/store/slices/userSlice';
 import { getInitials, formatDate } from '../../src/utils/formatters';
+import { apiRequests } from '../../src/utils/apiRequests';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -20,6 +24,7 @@ export default function ProfileScreen() {
 
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const [fullName, setFullName] = useState(user?.fullName ?? '');
   const [email, setEmail] = useState(user?.email ?? '');
@@ -55,16 +60,121 @@ export default function ProfileScreen() {
     setIsEditing(false);
   };
 
+  const handleAvatarPress = () => {
+    Alert.alert('Profile Photo', 'How would you like to update your photo?', [
+      { text: 'Take Photo', onPress: handleTakePhoto },
+      { text: 'Choose from Gallery', onPress: handlePickFromGallery },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
+  const handlePickFromGallery = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled) await uploadProfileImage(result.assets[0]);
+  };
+
+  const handleTakePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission Required', 'Camera access is needed to take a photo.');
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled) await uploadProfileImage(result.assets[0]);
+  };
+
+  const uploadProfileImage = async (asset: ImagePicker.ImagePickerAsset) => {
+    setIsUploadingImage(true);
+    setError('');
+    setSuccessMsg('');
+    try {
+      const ext = asset.uri.split('.').pop()?.toLowerCase() ?? 'jpg';
+      const contentType = ext === 'png' ? 'image/png' : 'image/jpeg';
+      const fileName = `photo.${ext}`;
+
+      // Step 1: Get a presigned S3 upload URL
+      const { data: presignRes } = await apiRequests.post('/uploads/presign', {
+        upload_type: 'profile_picture',
+        file_name: fileName,
+        content_type: contentType,
+      });
+      const { upload_url, public_url } = presignRes.data;
+
+      // Step 2: Upload image bytes directly to S3
+      const blobRes = await fetch(asset.uri);
+      const blob = await blobRes.blob();
+      await apiRequests.uploadToS3(upload_url, blob, contentType);
+
+      // Step 3: Save the public URL to the backend
+      await apiRequests.patch('/client/profile/picture', { profile_picture_url: public_url });
+
+      // Step 4: Update Redux state
+      dispatch(updateProfileImage(public_url));
+      setSuccessMsg('Profile photo updated');
+    } catch (e: any) {
+      setError(e.response?.data?.message || 'Failed to update profile photo');
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
   return (
     <SafeAreaView className="flex-1 bg-gray-50" edges={['bottom']}>
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
         {/* Avatar Hero */}
         <View className="bg-primary-500 pt-8 pb-12 items-center">
-          <View className="w-24 h-24 rounded-full bg-white/20 items-center justify-center mb-3">
-            <Text className="text-white text-3xl font-bold">
-              {getInitials(user?.fullName ?? 'U')}
-            </Text>
-          </View>
+          <TouchableOpacity
+            onPress={isEditing ? handleAvatarPress : undefined}
+            disabled={!isEditing || isUploadingImage}
+            activeOpacity={isEditing ? 0.7 : 1}
+            className="mb-3"
+            style={{ position: 'relative' }}
+          >
+            {user?.profileImage ? (
+              <Image
+                source={{ uri: user.profileImage }}
+                style={{ width: 96, height: 96, borderRadius: 48 }}
+              />
+            ) : (
+              <View className="w-24 h-24 rounded-full bg-white/20 items-center justify-center">
+                <Text className="text-white text-3xl font-bold">
+                  {getInitials(user?.fullName ?? 'U')}
+                </Text>
+              </View>
+            )}
+            {isEditing && (
+              <View
+                style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  right: 0,
+                  backgroundColor: '#fff',
+                  borderRadius: 16,
+                  width: 32,
+                  height: 32,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderWidth: 2,
+                  borderColor: '#F57C1F',
+                }}
+              >
+                {isUploadingImage ? (
+                  <ActivityIndicator size="small" color="#F57C1F" />
+                ) : (
+                  <Text style={{ fontSize: 15 }}>📷</Text>
+                )}
+              </View>
+            )}
+          </TouchableOpacity>
           <Text className="text-white text-xl font-bold">{user?.fullName}</Text>
           <Text className="text-white/70 text-sm mt-0.5">{user?.email ?? user?.phone}</Text>
 

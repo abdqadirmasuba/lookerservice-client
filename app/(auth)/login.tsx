@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Image, Linking } from 'react-native';
+import { parsePhoneNumberFromString, AsYouType } from 'libphonenumber-js';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -19,9 +20,18 @@ import { validateEmail, validatePhone, validatePassword } from '../../src/utils/
 import { showRequiredFieldAlert } from '../../src/utils/alerts';
 import { apiRequests } from '@/src/utils/apiRequests';
 import { signInWithGoogle } from '../../src/utils/googleAuth';
+import { registerDevicePushToken } from '../../src/utils/notifications';
 import KeyboardAvoidingWrapper from '@/src/componets/common/KeyboardAvoidingWrapper';
 
 type TabType = 'email' | 'phone';
+
+function getFlagEmoji(isoCode: string): string {
+  return isoCode
+    .toUpperCase()
+    .split('')
+    .map(c => String.fromCodePoint(0x1F1E6 - 65 + c.charCodeAt(0)))
+    .join('');
+}
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -118,7 +128,7 @@ export default function LoginScreen() {
     dispatch(loginStart());
 
     try {
-      const data = activeTab === 'email' ? { email, password } : { phone, password };
+      const data = activeTab === 'email' ? { email, password } : { phone: phone.replace(/\D/g, ''), password };
       const response = await apiRequests.post('/auth/login', data);
       const res = response.data;
       if (res.success && res.data) {
@@ -145,12 +155,15 @@ export default function LoginScreen() {
           phone: user.phone,
           role: user.role,
           status: user.status,
-          profileImage: user.profile_image ?? undefined,
+          profileImage: user.profile_picture_url ?? undefined,
           isEmailVerified: user.email_verified,
           isPhoneVerified: user.phone_verified,
           createdAt: user.created_at,
           lastLoginAt: user.last_login_at,
         }));
+
+        // Register push token (fire-and-forget, non-critical)
+        void registerDevicePushToken();
 
         // Navigate to home
         router.replace('/(tabs)/home');
@@ -158,7 +171,13 @@ export default function LoginScreen() {
         throw new Error(res.message || 'Login failed');
       }
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || error.message || 'Invalid credentials. Please try again.';
+      const responseData = error.response?.data;
+      const errorMessage =
+        responseData?.error?.details?.error ||
+        responseData?.error?.message ||
+        responseData?.message ||
+        error.message ||
+        'Invalid credentials. Please try again.';
       dispatch(loginFailure(errorMessage));
       setServerError(errorMessage);
     } finally {
@@ -175,6 +194,24 @@ export default function LoginScreen() {
       router.replace('/(tabs)/home');
     }
   };
+
+  const handlePhoneChange = (text: string) => {
+    const digits = text.replace(/\D/g, '');
+    if (!digits) {
+      setPhone('');
+      setPhoneError('');
+      setServerError('');
+      return;
+    }
+    const formatted = new AsYouType().input('+' + digits);
+    setPhone(formatted);
+    setPhoneError('');
+    setServerError('');
+  };
+
+  const detectedCountry = phone
+    ? parsePhoneNumberFromString(phone)?.country
+    : undefined;
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-[#0F172A]">
@@ -297,20 +334,21 @@ export default function LoginScreen() {
                 <View className={`flex-row items-center bg-gray-50 dark:bg-[#0F172A] border ${
                   phoneError ? 'border-error' : 'border-gray-200 dark:border-[#334155]'
                 } rounded-xl px-4`}>
-                  <PhoneIcon size={20} color="#6B7280" />
-                  <Text className="ml-3 text-gray-600 dark:text-gray-400">+256</Text>
+                  {detectedCountry ? (
+                    <Text style={{ fontSize: 22, lineHeight: 26 }}>{getFlagEmoji(detectedCountry)}</Text>
+                  ) : (
+                    <PhoneIcon size={20} color="#6B7280" />
+                  )}
                   <TextInput
-                    placeholder="701 234 567"
+                    placeholder="Include country code"
                     placeholderTextColor="#6B7280"
                     value={phone}
-                    onChangeText={(text) => {
-                      setPhone(text);
-                      setPhoneError('');
-                      setServerError('');
-                    }}
+                    onChangeText={handlePhoneChange}
                     keyboardType="phone-pad"
+                    autoCapitalize="none"
+                    autoCorrect={false}
                     returnKeyType="next"
-                    className="flex-1 py-4 ml-2 text-gray-900 dark:text-white"
+                    className="flex-1 py-4 ml-3 text-gray-900 dark:text-white"
                   />
                 </View>
                 {phoneError ? (
@@ -404,7 +442,7 @@ export default function LoginScreen() {
           </View>
 
           {/* Sign Up Link */}
-          <View className="flex-row items-center justify-center mt-6 mb-8">
+          <View className="flex-row items-center justify-center mt-6">
             <Text className="text-gray-600 dark:text-gray-400">
               Don't have an account?{' '}
             </Text>
@@ -412,6 +450,14 @@ export default function LoginScreen() {
               <Text className="text-tertiary-500 font-bold">Sign Up</Text>
             </TouchableOpacity>
           </View>
+
+          {/* Terms & Privacy */}
+          <TouchableOpacity
+            onPress={() => Linking.openURL('https://lookerservice.com/privacy-policy/provider')}
+            className="items-center mt-4 mb-8"
+          >
+            <Text className="text-gray-400 text-xs">Terms & Privacy Policy</Text>
+          </TouchableOpacity>
         </View>
       </KeyboardAvoidingWrapper>
     </SafeAreaView>

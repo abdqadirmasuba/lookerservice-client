@@ -184,7 +184,7 @@ export default function BookingsScreen() {
                 Your bookings will appear here once providers accept your requests.
               </Text>
               <TouchableOpacity
-                onPress={() => router.push('/(tabs)/explore')}
+                onPress={() => router.push('/(explore)/explore')}
                 className="bg-indigo-500 px-6 py-3 rounded-xl"
               >
                 <Text className="text-white font-semibold">Explore Providers</Text>

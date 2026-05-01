@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAppSelector, useAppDispatch } from '../../src/store/hooks';
@@ -33,18 +33,12 @@ export default function AccountScreen() {
         { label: 'Saved Addresses', route: '/(account)/addresses', icon: '📍' },
       ],
     },
-    {
-      title: 'Payments',
-      items: [
-        { label: 'Payment Methods', route: '/(account)/payment-methods', icon: '💳' },
-      ],
-    },
-    {
-      title: 'Settings',
-      items: [
-        { label: 'Notifications', route: '/(account)/notifications', icon: '🔔' },
-      ],
-    },
+    // {
+    //   title: 'Payments',
+    //   items: [
+    //     { label: 'Payment Methods', route: '/(account)/payment-methods', icon: '💳' },
+    //   ],
+    // },
     {
       title: 'Support',
       items: [
@@ -66,15 +60,23 @@ export default function AccountScreen() {
         {/* Profile Header */}
         <View className="px-6 py-8 bg-gradient-to-b from-primary-50">
           <View className="items-center">
-            <View className="bg-primary-500 w-24 h-24 rounded-full items-center justify-center mb-4">
-              <Text className="text-white text-3xl font-bold">
-                {user ? getInitials(user.fullName) : 'U'}
-              </Text>
-            </View>
+            {user?.profileImage ? (
+              <Image
+                source={{ uri: user.profileImage }}
+                style={{ width: 96, height: 96, borderRadius: 48 }}
+                className="mb-4"
+              />
+            ) : (
+              <View className="bg-primary-500 w-24 h-24 rounded-full items-center justify-center mb-4">
+                <Text className="text-white text-3xl font-bold">
+                  {user ? getInitials(user.fullName) : 'U'}
+                </Text>
+              </View>
+            )}
             <Text className="text-2xl font-bold text-gray-900 mb-1">
               {user?.fullName || 'User'}
             </Text>
-            <Text className="text-gray-600">{user?.email || 'user@example.com'}</Text>
+            <Text className="text-gray-600">{user?.email || user?.phone || ''}</Text>
           </View>
         </View>
 

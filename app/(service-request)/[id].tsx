@@ -7,12 +7,13 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAppDispatch } from '@/src/store/hooks';
-import { setSelectedRequest } from '@/src/store/slices/requestsSlice';
+import { setSelectedRequest, updateRequest } from '@/src/store/slices/requestsSlice';
 import { apiRequests } from '@/src/utils/apiRequests';
 import { formatCurrency, formatDateTime, formatRelativeTime } from '@/src/utils/formatters';
 import type { ServiceRequest } from '@/src/types';
@@ -25,6 +26,10 @@ export default function ServiceRequestDetailScreen() {
   const [request, setRequest] = useState<ServiceRequest | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isClosing, setIsClosing] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editDescription, setEditDescription] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     loadRequestDetails();
@@ -52,14 +57,75 @@ export default function ServiceRequestDetailScreen() {
     switch (status) {
       case 'open':
         return { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-800 dark:text-blue-300' };
+      case 'responded':
+        return { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-800 dark:text-green-300' };
       case 'in_progress':
         return { bg: 'bg-yellow-100 dark:bg-yellow-900/30', text: 'text-yellow-800 dark:text-yellow-300' };
       case 'completed':
         return { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-800 dark:text-green-300' };
-      case 'cancelled':
+      case 'rejected':
         return { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-800 dark:text-red-300' };
+      case 'closed':
+      case 'cancelled':
+        return { bg: 'bg-gray-100 dark:bg-gray-700', text: 'text-gray-600 dark:text-gray-400' };
       default:
         return { bg: 'bg-gray-100 dark:bg-gray-700', text: 'text-gray-800 dark:text-gray-300' };
+    }
+  };
+
+  const handleCloseRequest = () => {
+    Alert.alert(
+      'Close Request',
+      'Are you sure you want to close this request? This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Close Request',
+          style: 'destructive',
+          onPress: async () => {
+            setIsClosing(true);
+            try {
+              const response = await apiRequests.post(`/client/service-requests/${id}/close`, {});
+              if (response.data.success) {
+                const updated = { ...request!, status: 'closed' as const };
+                setRequest(updated);
+                dispatch(updateRequest(updated));
+              } else {
+                Alert.alert('Error', response.data.message || 'Failed to close request');
+              }
+            } catch (err: any) {
+              Alert.alert('Error', err.response?.data?.message || 'Could not close request');
+            } finally {
+              setIsClosing(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editDescription.trim()) {
+      Alert.alert('Validation', 'Description cannot be empty.');
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const response = await apiRequests.patch(`/client/service-requests/${id}`, {
+        description: editDescription.trim(),
+      });
+      if (response.data.success) {
+        const updated = { ...request!, description: editDescription.trim(), status: 'open' as const };
+        setRequest(updated);
+        dispatch(updateRequest(updated));
+        setIsEditing(false);
+      } else {
+        Alert.alert('Error', response.data.message || 'Failed to update request');
+      }
+    } catch (err: any) {
+      Alert.alert('Error', err.response?.data?.message || 'Could not update request');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -159,14 +225,68 @@ export default function ServiceRequestDetailScreen() {
             </Text>
           </View>
 
+          {/* Rejection Reason */}
+          {request.status === 'rejected' && request.rejection_reason && (
+            <View className="bg-red-50 dark:bg-red-900/20 rounded-xl p-5 mb-4 border border-red-200 dark:border-red-700">
+              <View className="flex-row items-center mb-2">
+                <Text className="text-lg mr-2">⛔</Text>
+                <Text className="text-base font-bold text-red-800 dark:text-red-200">Request Rejected</Text>
+              </View>
+              <Text className="text-sm text-red-700 dark:text-red-300 leading-5">
+                {request.rejection_reason}
+              </Text>
+            </View>
+          )}
+
+          {/* Business Info (for responded/direct) */}
+          {request.business_name && (
+            <View className="bg-white dark:bg-[#1E293B] rounded-xl p-5 mb-4 border border-gray-200 dark:border-[#334155]">
+              <Text className="text-sm text-gray-500 dark:text-gray-400 mb-2">Provider</Text>
+              <View className="flex-row items-center">
+                {request.business_logo ? (
+                  <Image
+                    source={{ uri: request.business_logo }}
+                    style={{ width: 44, height: 44, borderRadius: 22, marginRight: 12 }}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <View
+                    style={{
+                      width: 44, height: 44, borderRadius: 22, marginRight: 12,
+                      backgroundColor: '#2DA9E9', alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >
+                    <Text style={{ color: '#fff', fontWeight: '700', fontSize: 16 }}>
+                      {request.business_name.charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                )}
+                <Text className="text-base font-semibold text-gray-900 dark:text-white">
+                  {request.business_name}
+                </Text>
+              </View>
+            </View>
+          )}
+
           {/* Description */}
           <View className="bg-white dark:bg-[#1E293B] rounded-xl p-5 mb-4 border border-gray-200 dark:border-[#334155]">
             <Text className="text-lg font-bold text-gray-900 dark:text-white mb-3">
               Description
             </Text>
-            <Text className="text-base text-gray-700 dark:text-gray-300 leading-6">
-              {request.description}
-            </Text>
+            {isEditing ? (
+              <TextInput
+                value={editDescription}
+                onChangeText={setEditDescription}
+                multiline
+                numberOfLines={5}
+                className="text-base text-gray-700 dark:text-gray-300 leading-6 border border-gray-300 dark:border-[#475569] rounded-lg p-3"
+                style={{ minHeight: 100, textAlignVertical: 'top' }}
+              />
+            ) : (
+              <Text className="text-base text-gray-700 dark:text-gray-300 leading-6">
+                {request.description}
+              </Text>
+            )}
           </View>
 
           {/* Services */}
@@ -174,25 +294,44 @@ export default function ServiceRequestDetailScreen() {
             <Text className="text-lg font-bold text-gray-900 dark:text-white mb-3">
               Services Requested
             </Text>
-            {request.services.map((service, index) => (
-              <View
-                key={service.id}
-                className={`py-3 ${
-                  index < request.services.length - 1
-                    ? 'border-b border-gray-100 dark:border-[#334155]'
-                    : ''
-                }`}
-              >
-                <Text className="text-base font-semibold text-gray-900 dark:text-white mb-1">
-                  {service.service_name}
-                </Text>
-                {service.category_name && (
-                  <Text className="text-xs text-gray-500 dark:text-gray-400">
-                    {service.category_name}
+            {request.services && request.services.length > 0 ? (
+              request.services.map((service, index) => (
+                <View
+                  key={service.id}
+                  className={`py-3 ${
+                    index < request.services!.length - 1
+                      ? 'border-b border-gray-100 dark:border-[#334155]'
+                      : ''
+                  }`}
+                >
+                  <Text className="text-base font-semibold text-gray-900 dark:text-white mb-1">
+                    {service.service_name}
                   </Text>
-                )}
-              </View>
-            ))}
+                  {service.category_name && (
+                    <Text className="text-xs text-gray-500 dark:text-gray-400">
+                      {service.category_name}
+                    </Text>
+                  )}
+                </View>
+              ))
+            ) : request.service_names && request.service_names.length > 0 ? (
+              request.service_names.map((name, index) => (
+                <View
+                  key={index}
+                  className={`py-3 ${
+                    index < request.service_names!.length - 1
+                      ? 'border-b border-gray-100 dark:border-[#334155]'
+                      : ''
+                  }`}
+                >
+                  <Text className="text-base font-semibold text-gray-900 dark:text-white">
+                    {name}
+                  </Text>
+                </View>
+              ))
+            ) : (
+              <Text className="text-sm text-gray-400 dark:text-gray-500">No services listed</Text>
+            )}
           </View>
 
           {/* Budget & Schedule */}
@@ -321,31 +460,76 @@ export default function ServiceRequestDetailScreen() {
       </ScrollView>
 
       {/* Action Buttons */}
-      {request.status === 'open' && (
+      {(request.status === 'open' || request.status === 'rejected') && (
         <View className="absolute bottom-0 left-0 right-0 bg-white dark:bg-[#1E293B] border-t border-gray-200 dark:border-[#334155] px-5 py-4">
-          <TouchableOpacity
-            onPress={() => {
-              Alert.alert(
-                'Cancel Request',
-                'Are you sure you want to cancel this request?',
-                [
-                  { text: 'No', style: 'cancel' },
-                  {
-                    text: 'Yes, Cancel',
-                    style: 'destructive',
-                    onPress: () => {
-                      // TODO: Implement cancel request
-                      Alert.alert('Coming Soon', 'Cancel request feature coming soon!');
-                    },
-                  },
-                ]
-              );
-            }}
-            className="bg-red-500 py-4 rounded-xl items-center"
-            activeOpacity={0.8}
-          >
-            <Text className="text-white font-bold text-base">Cancel Request</Text>
-          </TouchableOpacity>
+          {request.status === 'open' && (
+            <TouchableOpacity
+              onPress={handleCloseRequest}
+              disabled={isClosing}
+              className="bg-red-500 py-4 rounded-xl items-center"
+              activeOpacity={0.8}
+            >
+              {isClosing ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text className="text-white font-bold text-base">Close Request</Text>
+              )}
+            </TouchableOpacity>
+          )}
+
+          {request.status === 'rejected' && (
+            <View className="gap-3">
+              {isEditing ? (
+                <View className="flex-row gap-3">
+                  <TouchableOpacity
+                    onPress={() => setIsEditing(false)}
+                    disabled={isSaving}
+                    className="flex-1 bg-gray-200 dark:bg-[#334155] py-4 rounded-xl items-center"
+                    activeOpacity={0.8}
+                  >
+                    <Text className="text-gray-700 dark:text-gray-300 font-bold text-base">Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={handleSaveEdit}
+                    disabled={isSaving}
+                    className="flex-1 bg-primary-500 py-4 rounded-xl items-center"
+                    activeOpacity={0.8}
+                  >
+                    {isSaving ? (
+                      <ActivityIndicator color="#fff" />
+                    ) : (
+                      <Text className="text-white font-bold text-base">Submit</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  onPress={() => {
+                    setEditDescription(request.description);
+                    setIsEditing(true);
+                  }}
+                  className="bg-primary-500 py-4 rounded-xl items-center"
+                  activeOpacity={0.8}
+                >
+                  <Text className="text-white font-bold text-base">Edit &amp; Resubmit</Text>
+                </TouchableOpacity>
+              )}
+              {!isEditing && (
+                <TouchableOpacity
+                  onPress={handleCloseRequest}
+                  disabled={isClosing}
+                  className="bg-red-500 py-4 rounded-xl items-center"
+                  activeOpacity={0.8}
+                >
+                  {isClosing ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text className="text-white font-bold text-base">Close Request</Text>
+                  )}
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
         </View>
       )}
     </SafeAreaView>

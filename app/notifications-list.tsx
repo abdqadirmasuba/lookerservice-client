@@ -1,47 +1,124 @@
-import { View, Text, TouchableOpacity, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, RefreshControl, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppSelector, useAppDispatch } from '../src/store/hooks';
-import { markAsRead, markAllAsRead } from '../src/store/slices/notificationsSlice';
-import { useState } from 'react';
-import { NotificationType } from '../src/types';
+import { setNotifications, markAsRead, markAllAsRead, deleteNotification, setUnreadCount } from '../src/store/slices/notificationsSlice';
+import { useState, useEffect, useCallback } from 'react';
+import { apiRequests } from '@/src/utils/apiRequests';
+import type { Notification } from '../src/types';
 
 export default function NotificationsListScreen() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const notifications = useAppSelector((state) => state.notifications.notifications);
   const [refreshing, setRefreshing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const mapNotification = (n: any): Notification => ({
+    id: n.id,
+    userId: n.user_id,
+    type: n.type,
+    source: n.source,
+    sourceId: n.source_id,
+    title: n.title,
+    message: n.message,
+    isRead: n.is_read,
+    data: n.data,
+    createdAt: n.created_at,
+  });
+
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const res = await apiRequests.get('/notifications');
+      if (res.data.success) {
+        dispatch(setNotifications((res.data.data ?? []).map(mapNotification)));
+      }
+    } catch {
+      // silent
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchNotifications(); }, [fetchNotifications]);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    // TODO: Fetch notifications from API
-    setTimeout(() => setRefreshing(false), 1000);
+    await fetchNotifications();
+    setRefreshing(false);
   };
 
-  const handleMarkAsRead = (id: string) => {
-    dispatch(markAsRead(id));
+  const handleMarkAsRead = async (id: string) => {
+    try {
+      await apiRequests.patch(`/notifications/${id}/read`, {});
+      dispatch(markAsRead(id));
+      dispatch(setUnreadCount(Math.max(0, notifications.filter(n => !n.isRead && n.id !== id).length)));
+    } catch {
+      dispatch(markAsRead(id));
+    }
   };
 
-  const handleMarkAllAsRead = () => {
-    dispatch(markAllAsRead());
+  const handleMarkAllAsRead = async () => {
+    try {
+      await apiRequests.post('/notifications/mark-all-read', {});
+      dispatch(markAllAsRead());
+      dispatch(setUnreadCount(0));
+    } catch {
+      dispatch(markAllAsRead());
+      dispatch(setUnreadCount(0));
+    }
   };
 
-  const getNotificationIcon = (type: NotificationType) => {
+  const handleDelete = async (id: string) => {
+    try {
+      await apiRequests.delete(`/notifications/${id}`);
+    } catch {
+      // silent
+    } finally {
+      dispatch(deleteNotification(id));
+    }
+  };
+
+  const handleTap = (notification: Notification) => {
+    if (!notification.isRead) handleMarkAsRead(notification.id);
+    if (notification.source === 'booking' && notification.sourceId) {
+      router.push({ pathname: '/(bookings)/[id]', params: { id: notification.sourceId } });
+    } else if (notification.source === 'request' && notification.sourceId) {
+      router.push({ pathname: '/(service-request)/[id]', params: { id: notification.sourceId } });
+    }
+  };
+
+  const getNotificationIcon = (type: string, source?: string) => {
     switch (type) {
-      case NotificationType.NEW_BID:
-        return 'pricetag';
-      case NotificationType.BID_ACCEPTED:
-        return 'checkmark-circle';
-      case NotificationType.BOOKING_CONFIRMED:
-      case NotificationType.BOOKING_CANCELLED:
-        return 'calendar';
-      case NotificationType.NEW_MESSAGE:
-        return 'chatbubble';
-      case NotificationType.PAYMENT_RECEIVED:
-        return 'card';
+      case 'accept': return 'checkmark-circle';
+      case 'reject': return 'close-circle';
+      case 'new_bid': case 'bid': return 'pricetag';
+      case 'message': case 'new_message': return 'chatbubble';
+      case 'payment': case 'payment_received': return 'card';
+      case 'cancel': case 'booking_cancelled': return 'close-circle';
       default:
+        if (source === 'booking') return 'calendar';
+        if (source === 'request') return 'document-text';
         return 'notifications';
+    }
+  };
+
+  const getIconColor = (type: string, isRead: boolean) => {
+    if (isRead) return '#6B7280';
+    switch (type) {
+      case 'accept': return '#16A34A';
+      case 'reject': case 'cancel': return '#DC2626';
+      default: return '#2563EB';
+    }
+  };
+
+  const getIconBg = (type: string, isRead: boolean) => {
+    if (isRead) return 'bg-gray-100';
+    switch (type) {
+      case 'accept': return 'bg-green-100';
+      case 'reject': case 'cancel': return 'bg-red-100';
+      default: return 'bg-blue-100';
     }
   };
 
@@ -83,7 +160,11 @@ export default function NotificationsListScreen() {
       <ScrollView
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {notifications.length === 0 ? (
+        {isLoading ? (
+          <View className="flex-1 items-center justify-center py-20">
+            <ActivityIndicator size="large" color="#2563EB" />
+          </View>
+        ) : notifications.length === 0 ? (
           <View className="flex-1 items-center justify-center py-20">
             <View className="w-24 h-24 bg-gray-100 rounded-full items-center justify-center mb-4">
               <Ionicons name="notifications-outline" size={48} color="#9CA3AF" />
@@ -98,24 +179,19 @@ export default function NotificationsListScreen() {
             {notifications.map((notification) => (
               <TouchableOpacity
                 key={notification.id}
-                onPress={() => {
-                  handleMarkAsRead(notification.id);
-                  // Navigate to relevant screen based on notification type
-                }}
+                onPress={() => handleTap(notification)}
                 className={`${
                   notification.isRead ? 'bg-white' : 'bg-blue-50'
                 } rounded-xl p-4 mb-3 shadow-sm`}
               >
                 <View className="flex-row">
                   <View
-                    className={`w-10 h-10 rounded-full items-center justify-center mr-3 ${
-                      notification.isRead ? 'bg-gray-100' : 'bg-blue-100'
-                    }`}
+                    className={`w-10 h-10 rounded-full items-center justify-center mr-3 ${getIconBg(notification.type, notification.isRead)}`}
                   >
                     <Ionicons
-                      name={getNotificationIcon(notification.type)}
+                      name={getNotificationIcon(notification.type, notification.source) as any}
                       size={20}
-                      color={notification.isRead ? '#6B7280' : '#2563EB'}
+                      color={getIconColor(notification.type, notification.isRead)}
                     />
                   </View>
                   <View className="flex-1">
@@ -127,9 +203,14 @@ export default function NotificationsListScreen() {
                       >
                         {notification.title}
                       </Text>
-                      {!notification.isRead && (
-                        <View className="w-2 h-2 bg-blue-500 rounded-full ml-2 mt-2" />
-                      )}
+                      <View className="flex-row items-center ml-2">
+                        {!notification.isRead && (
+                          <View className="w-2 h-2 bg-blue-500 rounded-full mr-2 mt-1" />
+                        )}
+                        <TouchableOpacity onPress={() => handleDelete(notification.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                          <Ionicons name="trash-outline" size={16} color="#9CA3AF" />
+                        </TouchableOpacity>
+                      </View>
                     </View>
                     <Text className="text-gray-600 text-sm mb-2" numberOfLines={2}>
                       {notification.message}

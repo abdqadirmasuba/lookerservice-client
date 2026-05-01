@@ -1,8 +1,6 @@
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { useAppSelector } from '../../src/store/hooks';
-import { getInitials } from '../../src/utils/formatters';
 
 type MenuItem = {
   label: string;
@@ -13,12 +11,6 @@ type MenuItem = {
 };
 
 const MENU_ITEMS: MenuItem[] = [
-  {
-    label: 'My Profile',
-    sublabel: 'View and edit your personal info',
-    route: '/(account)/profile',
-    icon: '👤',
-  },
   {
     label: 'Change Password',
     sublabel: 'Update your account password',
@@ -42,24 +34,10 @@ const MENU_ITEMS: MenuItem[] = [
 
 export default function AccountSettingsScreen() {
   const router = useRouter();
-  const user = useAppSelector((state) => state.user.user);
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50" edges={['bottom']}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
-        {/* Mini profile strip */}
-        <View className="flex-row items-center bg-white px-5 py-4 border-b border-gray-100 mb-4">
-          <View className="w-12 h-12 rounded-full bg-primary-500 items-center justify-center mr-4">
-            <Text className="text-white font-bold text-lg">
-              {getInitials(user?.fullName ?? 'U')}
-            </Text>
-          </View>
-          <View className="flex-1">
-            <Text className="font-semibold text-gray-900 text-base">{user?.fullName ?? 'User'}</Text>
-            <Text className="text-gray-400 text-sm">{user?.email ?? user?.phone ?? ''}</Text>
-          </View>
-        </View>
-
+      <ScrollView contentContainerStyle={{ paddingBottom: 32, paddingTop: 16 }}>
         {/* Menu */}
         <View className="mx-4 bg-white rounded-2xl border border-gray-100 overflow-hidden">
           {MENU_ITEMS.map((item, i) => (

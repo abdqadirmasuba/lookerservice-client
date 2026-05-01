@@ -6,6 +6,7 @@ export default function ExploreLayout() {
       <Stack.Screen name="categories" />
       <Stack.Screen name="services" />
       <Stack.Screen name="providers" />
+      <Stack.Screen name="explore" />
     </Stack>
   );
 }

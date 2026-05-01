@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Image, Linking } from 'react-native';
+import { parsePhoneNumberFromString, AsYouType } from 'libphonenumber-js';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -19,6 +20,14 @@ import KeyboardAvoidingWrapper from '@/src/componets/common/KeyboardAvoidingWrap
 import { apiRequests } from '@/src/utils/apiRequests';
 
 type TabType = 'email' | 'phone';
+
+function getFlagEmoji(isoCode: string): string {
+  return isoCode
+    .toUpperCase()
+    .split('')
+    .map(c => String.fromCodePoint(0x1F1E6 - 65 + c.charCodeAt(0)))
+    .join('');
+}
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -141,7 +150,7 @@ export default function RegisterScreen() {
       if (activeTab === 'email') {
         payload.email = email.trim();
       } else {
-        payload.phone = phone.trim().startsWith('+') ? phone.trim() : `+256${phone.trim()}`;
+        payload.phone = phone.replace(/\D/g, '');
       }
 
       const response = await apiRequests.post('/auth/register', payload);
@@ -163,6 +172,22 @@ export default function RegisterScreen() {
       setIsLoading(false);
     }
   };
+
+  const handlePhoneChange = (text: string) => {
+    const digits = text.replace(/\D/g, '');
+    if (!digits) {
+      setPhone('');
+      setPhoneError('');
+      return;
+    }
+    const formatted = new AsYouType().input('+' + digits);
+    setPhone(formatted);
+    setPhoneError('');
+  };
+
+  const detectedCountry = phone
+    ? parsePhoneNumberFromString(phone)?.country
+    : undefined;
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-[#0F172A]">
@@ -303,19 +328,21 @@ export default function RegisterScreen() {
                   <View className={`flex-row items-center bg-gray-50 dark:bg-[#0F172A] border ${
                     phoneError ? 'border-error' : 'border-gray-200 dark:border-[#334155]'
                   } rounded-xl px-4`}>
-                    <PhoneIcon size={20} color="#6B7280" />
-                    <Text className="ml-3 text-gray-600 dark:text-gray-400">+256</Text>
+                    {detectedCountry ? (
+                      <Text style={{ fontSize: 22, lineHeight: 26 }}>{getFlagEmoji(detectedCountry)}</Text>
+                    ) : (
+                      <PhoneIcon size={20} color="#6B7280" />
+                    )}
                     <TextInput
-                      placeholder="701 234 567"
+                      placeholder="Include country code"
                       placeholderTextColor="#6B7280"
                       value={phone}
-                      onChangeText={(text) => {
-                        setPhone(text);
-                        setPhoneError('');
-                      }}
+                      onChangeText={handlePhoneChange}
                       keyboardType="phone-pad"
+                      autoCapitalize="none"
+                      autoCorrect={false}
                       returnKeyType="next"
-                      className="flex-1 py-4 ml-2 text-gray-900 dark:text-white"
+                      className="flex-1 py-4 ml-3 text-gray-900 dark:text-white"
                     />
                   </View>
                   {phoneError ? (
@@ -323,12 +350,6 @@ export default function RegisterScreen() {
                   ) : null}
                 </View>
 
-                {/* WhatsApp Notice */}
-                <View className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl px-4 py-3 mb-4">
-                  <Text className="text-blue-700 dark:text-blue-300 text-sm text-center">
-                    📱 We'll send a WhatsApp message to verify your phone number
-                  </Text>
-                </View>
               </>
             )}
 
@@ -435,7 +456,7 @@ export default function RegisterScreen() {
           </View>
 
           {/* Login Link */}
-          <View className="flex-row items-center justify-center mt-6 mb-8">
+          <View className="flex-row items-center justify-center mt-6">
             <Text className="text-gray-600 dark:text-gray-400">
               Already have an account?{' '}
             </Text>
@@ -443,6 +464,14 @@ export default function RegisterScreen() {
               <Text className="text-tertiary-500 font-bold">Login</Text>
             </TouchableOpacity>
           </View>
+
+          {/* Terms & Privacy */}
+          <TouchableOpacity
+            onPress={() => Linking.openURL('https://lookerservice.com/privacy-policy')}
+            className="items-center mt-4 mb-8"
+          >
+            <Text className="text-gray-400 text-xs">Terms & Privacy Policy</Text>
+          </TouchableOpacity>
         </View>
       </KeyboardAvoidingWrapper>
 

@@ -17,13 +17,14 @@
       "supportsTablet": true
     },
     "android": {
+      "googleServicesFile": "google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.lookerservice.client"
+      "package": "com.lookerservice.clientapp"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -41,6 +42,13 @@
         "@react-native-google-signin/google-signin",
         {
           "iosUrlScheme": "com.googleusercontent.apps._some_id_here_"
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#333",
+          "defaultChannel": "default"
         }
       ],
       "expo-font"

@@ -1,5 +1,5 @@
 export type RequestType = 'direct' | 'open';
-export type RequestStatus = 'open' | 'in_progress' | 'completed' | 'cancelled' | 'closed';
+export type RequestStatus = 'open' | 'responded' | 'rejected' | 'in_progress' | 'completed' | 'cancelled' | 'closed';
 
 export interface ServiceRequestService {
   id: string;
@@ -11,27 +11,33 @@ export interface ServiceRequestService {
 export interface ServiceRequest {
   id: string;
   request_number: string;
-  client_id: string;
+  client_id?: string;
   request_type: RequestType;
-  description: string;
-  address: string;
-  city: string;
+  description?: string;
+  address?: string;
+  city?: string;
   status: RequestStatus;
-  budget_min: number | null;
-  budget_max: number | null;
-  preferred_date: string | null;
-  deadline: string | null;
-  images: string[] | null;
-  services: ServiceRequestService[];
-  bid_count: number;
-  created_at: string;
-  // Optional fields that might come in detail view
+  budget_min?: number | null;
+  budget_max?: number | null;
+  preferred_date?: string | null;
+  deadline?: string | null;
+  images?: string[] | null;
+  // List response fields
+  service_names?: string[];
+  business_name?: string;
+  business_logo?: string | null;
+  // Detail response fields
+  services?: ServiceRequestService[];
+  bid_count?: number;
   target_provider_id?: string;
   target_provider_name?: string;
+  rejection_reason?: string | null;
   location?: {
     latitude: number;
     longitude: number;
   };
+  created_at: string;
+  updated_at?: string;
 }
 
 export interface CreateRequestData {

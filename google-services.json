@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "991877916424",
+    "project_id": "lookerservice-f8d88",
+    "storage_bucket": "lookerservice-f8d88.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:991877916424:android:3dc6b8d517b9e4290eeebd",
+        "android_client_info": {
+          "package_name": "com.lookerservice.clientapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDzgH2QiW0b8pikBrQi6yEXjny2kyIrd_I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

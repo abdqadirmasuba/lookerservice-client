@@ -3,6 +3,9 @@ import { config } from './apiConfig';
 
 const api = axios.create({
   baseURL: config.domain_url,
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
 console.log('API Base URL:', config.domain_url);
@@ -31,6 +34,17 @@ export const apiRequests = {
   put: (url: string, data?: any) => api.put(url, data),
   patch: (url: string, data?: any) => api.patch(url, data),
   postheaders: (url: string, data?: any, headers?: any) => api.post(url, data, { headers }),
+  // Upload a blob directly to a presigned S3 URL using native fetch (avoids axios header quirks)
+  uploadToS3: async (uploadUrl: string, blob: Blob, contentType: string): Promise<void> => {
+    const res = await fetch(uploadUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': contentType },
+      body: blob,
+    });
+    if (!res.ok) {
+      throw new Error(`S3 upload failed with status ${res.status}`);
+    }
+  },
 };
 
 export default api;

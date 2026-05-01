@@ -5,6 +5,7 @@ interface NotificationsState {
   notifications: Notification[];
   unreadCount: number;
   settings: NotificationSettings;
+  pushToken: string | null;
 }
 
 const defaultSettings: NotificationSettings = {
@@ -24,6 +25,7 @@ const initialState: NotificationsState = {
   notifications: [],
   unreadCount: 0,
   settings: defaultSettings,
+  pushToken: null,
 };
 
 const notificationsSlice = createSlice({
@@ -61,6 +63,12 @@ const notificationsSlice = createSlice({
     updateSettings(state, action: PayloadAction<Partial<NotificationSettings>>) {
       state.settings = { ...state.settings, ...action.payload };
     },
+    setUnreadCount(state, action: PayloadAction<number>) {
+      state.unreadCount = action.payload;
+    },
+    setPushToken(state, action: PayloadAction<string | null>) {
+      state.pushToken = action.payload;
+    },
   },
 });
 
@@ -71,6 +79,8 @@ export const {
   markAllAsRead,
   deleteNotification,
   updateSettings,
+  setUnreadCount,
+  setPushToken,
 } = notificationsSlice.actions;
 
 export default notificationsSlice.reducer;

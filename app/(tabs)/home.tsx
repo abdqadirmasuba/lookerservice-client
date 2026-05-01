@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppSelector, useAppDispatch } from '../../src/store/hooks';
 import { setDashboardSummary, setDashboardLoading, setDashboardError } from '../../src/store/slices/dashboardSlice';
+import { setUnreadCount } from '../../src/store/slices/notificationsSlice';
 import { apiRequests } from '@/src/utils/apiRequests';
 
 
@@ -13,11 +14,24 @@ export default function HomeScreen() {
   const dispatch = useAppDispatch();
   const user = useAppSelector((state) => state.user.user);
   const dashboardSummary = useAppSelector((state) => state.dashboard.summary);
+  const unreadCount = useAppSelector((state) => state.notifications.unreadCount);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     loadDashboard();
+    fetchUnreadCount();
   }, []);
+
+  const fetchUnreadCount = async () => {
+    try {
+      const res = await apiRequests.get('/notifications/count');
+      if (res.data.success) {
+        dispatch(setUnreadCount(res.data.data.unread_count));
+      }
+    } catch {
+      // silent — badge simply won't show
+    }
+  };
 
   const loadDashboard = async () => {
     try {
@@ -36,7 +50,7 @@ export default function HomeScreen() {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadDashboard();
+    await Promise.all([loadDashboard(), fetchUnreadCount()]);
     setRefreshing(false);
   };
 
@@ -64,10 +78,10 @@ export default function HomeScreen() {
               className="w-12 h-12 rounded-full bg-gray-100 items-center justify-center relative"
             >
               <Ionicons name="notifications-outline" size={24} color="#1F2937" />
-              {(dashboardSummary?.unread_notifications_count || 0) > 0 && (
+              {unreadCount > 0 && (
                 <View className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 rounded-full items-center justify-center">
                   <Text className="text-white text-xs font-bold">
-                    {(dashboardSummary?.unread_notifications_count || 0) > 9 ? '9+' : dashboardSummary?.unread_notifications_count}
+                    {unreadCount > 9 ? '9+' : unreadCount}
                   </Text>
                 </View>
               )}
@@ -78,7 +92,7 @@ export default function HomeScreen() {
         {/* Call to Action — Find a Service */}
         <View className="px-6 pt-4 pb-6 bg-white mb-4">
           <TouchableOpacity
-            onPress={() => router.push('/(tabs)/explore')}
+            onPress={() => router.push('/(explore)/explore')}
             activeOpacity={0.85}
             className="rounded-2xl overflow-hidden"
           >
@@ -242,7 +256,7 @@ export default function HomeScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity 
-              onPress={() => router.push('/(tabs)/explore')}
+              onPress={() => router.push('/(explore)/explore')}
               className="bg-white rounded-xl p-5 shadow-sm flex-row items-center"
             >
               <View className="w-12 h-12 rounded-full items-center justify-center mr-4" style={{ backgroundColor: '#FFF7ED' }}>

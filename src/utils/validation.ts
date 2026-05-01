@@ -1,3 +1,4 @@
+import { parsePhoneNumberFromString } from 'libphonenumber-js';
 import { PASSWORD_MIN_LENGTH, PASSWORD_MAX_LENGTH, NAME_MIN_LENGTH, NAME_MAX_LENGTH } from './constants';
 
 // Email validation
@@ -15,22 +16,24 @@ export const validateEmail = (email: string): { isValid: boolean; error?: string
   return { isValid: true };
 };
 
-// Phone validation (Uganda format)
+// Phone validation — country code aware using libphonenumber-js
 export const validatePhone = (phone: string): { isValid: boolean; error?: string } => {
   if (!phone) {
     return { isValid: false, error: 'Phone number is required' };
   }
-  
-  // Remove spaces and special characters
-  const cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
-  
-  // Uganda phone numbers: +256... or 0...
-  const phoneRegex = /^(\+256|0)[7][0-9]{8}$/;
-  
-  if (!phoneRegex.test(cleanPhone)) {
-    return { isValid: false, error: 'Please enter a valid phone number (e.g., 0700000000)' };
+
+  const clean = phone.replace(/[\s\-\(\)]/g, '');
+
+  const parsed = parsePhoneNumberFromString(clean);
+
+  if (!parsed || !parsed.country) {
+    return { isValid: false, error: 'Invalid or unrecognized country code' };
   }
-  
+
+  if (!parsed.isValid()) {
+    return { isValid: false, error: `Invalid phone number for the entered country code (+${parsed.countryCallingCode})` };
+  }
+
   return { isValid: true };
 };
 

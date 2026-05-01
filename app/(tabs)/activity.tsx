@@ -89,7 +89,7 @@ export default function ActivityScreen() {
 
       {/* CTA */}
       <TouchableOpacity
-        onPress={() => router.push('/(tabs)/explore')}
+        onPress={() => router.push('/(explore)/explore')}
         activeOpacity={0.85}
         style={styles.cta}
       >
@@ -136,7 +136,7 @@ export default function ActivityScreen() {
                 Providers you view will appear here so you can find them again easily.
               </Text>
               <TouchableOpacity
-                onPress={() => router.push('/(tabs)/explore')}
+                onPress={() => router.push('/(explore)/explore')}
                 style={styles.emptyBtn}
               >
                 <Text style={styles.emptyBtnText}>Browse Services</Text>

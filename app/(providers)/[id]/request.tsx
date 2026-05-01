@@ -238,6 +238,7 @@ export default function ProviderRequestScreen() {
   // Shared date picker state
   const [datePickerFor, setDatePickerFor] = useState<'preferred' | 'deadline' | null>(null);
   const [tempDate, setTempDate] = useState<Date>(new Date());
+  const [androidPickerStep, setAndroidPickerStep] = useState<'date' | 'time'>('date');
 
   // ── Fetch ────────────────────────────────────────────────────────────────────
   const fetchInfo = useCallback(async () => {
@@ -297,7 +298,7 @@ export default function ProviderRequestScreen() {
   const pickImages = async (source: 'gallery' | 'camera') => {
     const result = source === 'gallery'
       ? await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          mediaTypes: 'images',
           allowsMultipleSelection: true,
           quality: 0.8,
         })
@@ -325,16 +326,34 @@ export default function ProviderRequestScreen() {
         try {
           imageUrls = await Promise.all(
             images.map(async (img) => {
-              const formData = new FormData();
-              formData.append('file', { uri: img.uri, name: img.name, type: img.type } as any);
-              const res = await apiRequests.postheaders('/client/uploads', formData, {
-                'Content-Type': 'multipart/form-data',
+              // 1. Get a presigned S3 upload URL
+              const presignRes = await apiRequests.post('/client/uploads/presign', {
+                file_name: img.name,
+                content_type: img.type,
+                upload_type: 'request_image',
               });
-              if (res.data.success) return res.data.data.url as string;
-              throw new Error(res.data.message || 'Upload failed');
+              console.log('Presign response:', presignRes.data);
+              if (!presignRes.data.success) {
+                throw new Error(presignRes.data.message || 'Failed to get upload URL');
+              }
+              const { upload_url, public_url } = presignRes.data.data as {
+                upload_url: string;
+                public_url: string;
+              };
+
+              // 2. Read the local image as a blob
+              const fileRes = await fetch(img.uri);
+              const blob = await fileRes.blob();
+
+              // 3. Upload directly to S3 via the presigned PUT URL
+              await apiRequests.uploadToS3(upload_url, blob, img.type);
+
+              return public_url;
             }),
           );
         } catch (upErr: any) {
+          console.error('Image upload error:', upErr.response);
+
           Alert.alert('Upload Failed', upErr.message || 'Could not upload images. Please try again.');
           setIsSubmitting(false);
           return;
@@ -372,7 +391,9 @@ export default function ProviderRequestScreen() {
         throw new Error(res.data.message || 'Failed to submit');
       }
     } catch (err: any) {
+      console.error('Submission error:', err.response?.data);
       Alert.alert('Submission Failed', err.response?.data?.message || err.message || 'Could not submit your request.');
+
     } finally {
       setIsSubmitting(false);
     }
@@ -830,8 +851,8 @@ export default function ProviderRequestScreen() {
         </View>
       </KeyboardAvoidingView>
 
-      {/* ── Date Picker Modal ─────────────────────────────────────────────── */}
-      {datePickerFor !== null && (
+      {/* ── Date Picker – iOS (spinner in modal) ─────────────────────────── */}
+      {datePickerFor !== null && Platform.OS === 'ios' && (
         <Modal visible transparent animationType="fade">
           <View className="flex-1 bg-black/50 items-center justify-end">
             <View className="w-full bg-white rounded-t-3xl pt-5 pb-8 px-5">
@@ -866,6 +887,39 @@ export default function ProviderRequestScreen() {
             </View>
           </View>
         </Modal>
+      )}
+
+      {/* ── Date Picker – Android (native two-step: date then time) ─────── */}
+      {datePickerFor !== null && Platform.OS === 'android' && (
+        <DateTimePicker
+          value={tempDate}
+          mode={androidPickerStep}
+          display="default"
+          onChange={(event, date) => {
+            if (event.type === 'dismissed') {
+              setDatePickerFor(null);
+              setAndroidPickerStep('date');
+              return;
+            }
+            if (!date) return;
+            if (androidPickerStep === 'date') {
+              // Preserve existing time, update only date portion
+              const combined = new Date(tempDate);
+              combined.setFullYear(date.getFullYear(), date.getMonth(), date.getDate());
+              setTempDate(combined);
+              setAndroidPickerStep('time');
+            } else {
+              // Preserve date portion, update time
+              const combined = new Date(tempDate);
+              combined.setHours(date.getHours(), date.getMinutes(), 0, 0);
+              if (datePickerFor === 'preferred') setPreferredDate(combined);
+              else setDeadlineDate(combined);
+              setTempDate(combined);
+              setDatePickerFor(null);
+              setAndroidPickerStep('date');
+            }
+          }}
+        />
       )}
 
       {/* ── Map Picker Modal ──────────────────────────────────────────────── */}

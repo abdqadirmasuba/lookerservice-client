@@ -1,16 +1,13 @@
-import { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Dimensions, FlatList } from 'react-native';
+import { useState, useRef, useEffect } from 'react';
+import { View, Text, TouchableOpacity, Dimensions, FlatList } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  withSpring,
-  withTiming,
   interpolate,
   Extrapolate,
 } from 'react-native-reanimated';
-import { LinearGradient } from 'expo-linear-gradient';
 import { saveOnboardingComplete } from '../../src/utils/storage';
 
 const { width } = Dimensions.get('window');
@@ -18,52 +15,49 @@ const { width } = Dimensions.get('window');
 const slides = [
   {
     id: 1,
-    title: 'Welcome to LookerService',
-    description: 'Your trusted platform to connect with verified service providers near you',
-    emoji: '👋',
-    gradient: ['#F57C1F', '#E06A0F'] as const,
+    title: 'Find Trusted Providers',
+    description: 'Connect instantly with verified, top-rated service professionals in your area — so you never have to settle for less.',
+    emoji: '🔍',
   },
   {
     id: 2,
-    title: 'Find Verified Providers',
-    description: 'Browse through hundreds of verified and highly-rated service providers in your area',
-    emoji: '🔍',
-    gradient: ['#3B82F6', '#2563EB'] as const,
+    title: 'Post a Request & Get Bids',
+    description: 'Describe what you need, sit back, and let skilled providers compete for your job with competitive offers.',
+    emoji: '📋',
   },
   {
     id: 3,
-    title: 'Post Requests & Get Bids',
-    description: 'Post your service request and receive competitive bids from multiple providers',
-    emoji: '💼',
-    gradient: ['#10B981', '#059669'] as const,
-  },
-  {
-    id: 4,
-    title: 'Book, Pay & Rate',
-    description: 'Book services securely, make payments, and rate your experience with providers',
-    emoji: '⭐',
-    gradient: ['#8B5CF6', '#7C3AED'] as const,
+    title: 'Book, Pay & Stay Protected',
+    description: 'Secure bookings, safe payments, and a transparent rating system — your satisfaction is always guaranteed.',
+    emoji: '🛡️',
   },
 ];
+
+const AUTO_SCROLL_INTERVAL = 3500;
 
 export default function IntroScreen() {
   const router = useRouter();
   const [currentSlide, setCurrentSlide] = useState(0);
   const flatListRef = useRef<FlatList>(null);
   const scrollX = useSharedValue(0);
+  const autoScrollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const handleNext = () => {
-    if (currentSlide < slides.length - 1) {
-      const nextSlide = currentSlide + 1;
-      setCurrentSlide(nextSlide);
-      flatListRef.current?.scrollToIndex({ index: nextSlide, animated: true });
-    }
+  const startAutoScroll = () => {
+    autoScrollRef.current = setInterval(() => {
+      setCurrentSlide((prev) => {
+        const next = (prev + 1) % slides.length;
+        flatListRef.current?.scrollToIndex({ index: next, animated: true });
+        return next;
+      });
+    }, AUTO_SCROLL_INTERVAL);
   };
 
-  const handleSkip = async () => {
-    await saveOnboardingComplete();
-    router.replace('/(auth)/login');
-  };
+  useEffect(() => {
+    startAutoScroll();
+    return () => {
+      if (autoScrollRef.current) clearInterval(autoScrollRef.current);
+    };
+  }, []);
 
   const handleGetStarted = async () => {
     await saveOnboardingComplete();
@@ -74,43 +68,36 @@ export default function IntroScreen() {
     const offsetX = event.nativeEvent.contentOffset.x;
     scrollX.value = offsetX;
     const index = Math.round(offsetX / width);
-    setCurrentSlide(index);
+    if (index !== currentSlide) {
+      setCurrentSlide(index);
+    }
   };
 
-  const renderSlide = ({ item, index }: { item: typeof slides[0]; index: number }) => {
+  const onScrollBeginDrag = () => {
+    if (autoScrollRef.current) clearInterval(autoScrollRef.current);
+  };
+
+  const onScrollEndDrag = () => {
+    startAutoScroll();
+  };
+
+  const renderSlide = ({ item }: { item: typeof slides[0] }) => {
     return (
       <View style={{ width }} className="flex-1 items-center justify-center px-8">
-        <Text className="text-8xl mb-12">{item.emoji}</Text>
-        <Text className="text-3xl font-bold text-white text-center mb-4 px-4">
+        <Text className="text-8xl mb-10">{item.emoji}</Text>
+        <Text className="text-3xl font-bold text-center mb-5 px-2" style={{ color: '#1565C0' }}>
           {item.title}
         </Text>
-        <Text className="text-lg text-white/90 text-center px-4 leading-relaxed">
+        <Text className="text-base text-center px-4 leading-relaxed" style={{ color: '#555' }}>
           {item.description}
         </Text>
       </View>
     );
   };
 
-  const currentSlideData = slides[currentSlide];
-
   return (
-    <LinearGradient
-      colors={currentSlideData.gradient}
-      className="flex-1"
-    >
-      <StatusBar style="light" />
-
-      {/* Skip Button */}
-      {currentSlide < slides.length - 1 && (
-        <View className="absolute top-12 right-6 z-10">
-          <TouchableOpacity 
-            onPress={handleSkip} 
-            className="px-6 py-3 bg-white/20 rounded-full backdrop-blur-lg"
-          >
-            <Text className="text-white font-semibold text-base">Skip</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+    <View className="flex-1 bg-white">
+      <StatusBar style="dark" />
 
       {/* Slides */}
       <View className="flex-1">
@@ -123,6 +110,8 @@ export default function IntroScreen() {
           showsHorizontalScrollIndicator={false}
           onScroll={onScroll}
           scrollEventThrottle={16}
+          onScrollBeginDrag={onScrollBeginDrag}
+          onScrollEndDrag={onScrollEndDrag}
           keyExtractor={(item) => item.id.toString()}
         />
       </View>
@@ -132,64 +121,55 @@ export default function IntroScreen() {
         {slides.map((_, index) => {
           const dotAnimatedStyle = useAnimatedStyle(() => {
             const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
-            const widthValue = interpolate(
+            const dotWidth = interpolate(
               scrollX.value,
               inputRange,
-              [8, 32, 8],
+              [8, 28, 8],
               Extrapolate.CLAMP
             );
-            const opacityValue = interpolate(
+            const opacity = interpolate(
               scrollX.value,
               inputRange,
               [0.4, 1, 0.4],
               Extrapolate.CLAMP
             );
-            return {
-              width: widthValue,
-              opacity: opacityValue,
-            };
+            return { width: dotWidth, opacity };
           });
 
           return (
             <Animated.View
               key={index}
               style={dotAnimatedStyle}
-              className="h-2 rounded-full mx-1 bg-white"
+              className="h-2 rounded-full mx-1 bg-gray-400"
             />
           );
         })}
       </View>
 
-      {/* Navigation Buttons */}
-      <View className="px-6 pb-12">
-        {currentSlide < slides.length - 1 ? (
-          <View className="flex-row justify-between items-center">
-            <View style={{ width: 80 }} />
-            <TouchableOpacity
-              onPress={handleNext}
-              className="bg-white py-4 px-12 rounded-full shadow-lg"
-            >
-              <Text className="text-primary-500 font-bold text-lg">Next</Text>
-            </TouchableOpacity>
-            <View style={{ width: 80 }} />
-          </View>
-        ) : (
-          <View className="space-y-3">
-            <TouchableOpacity
-              onPress={handleGetStarted}
-              className="bg-white py-5 rounded-full items-center shadow-lg"
-            >
-              <Text className="text-primary-500 font-bold text-lg">Get Started</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleSkip}
-              className="py-4 items-center"
-            >
-              <Text className="text-white/90 font-medium text-base">I already have an account</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+      {/* Get Started Button */}
+      <View className="px-6 pb-12 items-center">
+        <TouchableOpacity
+          onPress={handleGetStarted}
+          className="py-3 px-10 rounded-full"
+          style={{ backgroundColor: '#2DA9E9' }}
+        >
+          <Text className="font-bold text-base text-white">
+            Get Started
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={async () => {
+            await saveOnboardingComplete();
+            router.replace('/(auth)/login');
+          }}
+          className="mt-5 py-2"
+        >
+          <Text className="text-base" style={{ color: '#444' }}>
+            Already have an account?{' '}
+            <Text className="font-bold" style={{ color: '#F57C1F' }}>Log in</Text>
+          </Text>
+        </TouchableOpacity>
       </View>
-    </LinearGradient>
+    </View>
   );
 }

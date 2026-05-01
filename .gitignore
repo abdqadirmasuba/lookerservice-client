@@ -8,6 +8,7 @@ node_modules/
 dist/
 web-build/
 expo-env.d.ts
+lookerservice-f8d88*.json
 
 # Native
 .kotlin/
