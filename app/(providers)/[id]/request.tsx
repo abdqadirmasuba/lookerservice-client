@@ -332,7 +332,6 @@ export default function ProviderRequestScreen() {
                 content_type: img.type,
                 upload_type: 'request_image',
               });
-              console.log('Presign response:', presignRes.data);
               if (!presignRes.data.success) {
                 throw new Error(presignRes.data.message || 'Failed to get upload URL');
               }

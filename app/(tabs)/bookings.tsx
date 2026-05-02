@@ -89,6 +89,7 @@ function BookingCard({ booking, onPress }: { booking: Booking; onPress: () => vo
 export default function BookingsScreen() {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
   const { bookings, isLoading, isLoadingMore, hasMore, offset, error } = useAppSelector(
     (state) => state.bookings,
   );
@@ -142,6 +143,43 @@ export default function BookingsScreen() {
     return (
       <SafeAreaView className="flex-1 bg-white items-center justify-center">
         <ActivityIndicator size="large" color="#6366f1" />
+      </SafeAreaView>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <SafeAreaView className="flex-1 bg-gray-50">
+        <View className="px-5 pt-4 pb-3 bg-white border-b border-gray-100">
+          <Text className="text-2xl font-bold text-gray-900">My Bookings</Text>
+          <Text className="text-sm text-gray-500 mt-0.5">Track your service bookings</Text>
+        </View>
+        <View className="flex-1 items-center justify-center px-8">
+          <View className="w-[72px] h-[72px] rounded-full items-center justify-center mb-4" style={{ backgroundColor: '#F0FDF4' }}>
+            <Text className="text-[32px]">📅</Text>
+          </View>
+          <Text className="text-lg font-bold text-gray-900 text-center mb-2">
+            Sign In to View Bookings
+          </Text>
+          <Text className="text-sm text-gray-500 text-center leading-5 mb-7">
+            Log in to manage your bookings and track service appointments.
+          </Text>
+          <TouchableOpacity
+            onPress={() => router.push('/(auth)/login')}
+            className="w-full py-3.5 rounded-2xl items-center mb-3"
+            style={{ backgroundColor: '#2DA9E9' }}
+            activeOpacity={0.85}
+          >
+            <Text className="text-white font-bold text-base">Log In</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.push('/(auth)/register')}
+            className="w-full py-3.5 rounded-2xl items-center border border-gray-200"
+            activeOpacity={0.85}
+          >
+            <Text className="text-gray-800 font-bold text-base">Create Account</Text>
+          </TouchableOpacity>
+        </View>
       </SafeAreaView>
     );
   }

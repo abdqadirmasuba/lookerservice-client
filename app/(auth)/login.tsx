@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Image, Linking } from 'react-native';
 import { parsePhoneNumberFromString, AsYouType } from 'libphonenumber-js';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -35,8 +36,16 @@ function getFlagEmoji(isoCode: string): string {
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { verified, message } = useLocalSearchParams<{ verified?: string; message?: string }>();
+  const { verified, message, returnTo } = useLocalSearchParams<{ verified?: string; message?: string; returnTo?: string }>();
   const dispatch = useAppDispatch();
+
+  const handleClose = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(tabs)/home');
+    }
+  };
   const [activeTab, setActiveTab] = useState<TabType>('email');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -165,8 +174,8 @@ export default function LoginScreen() {
         // Register push token (fire-and-forget, non-critical)
         void registerDevicePushToken();
 
-        // Navigate to home
-        router.replace('/(tabs)/home');
+        // Navigate back to origin or home
+        router.replace((returnTo as any) ?? '/(tabs)/home');
       } else {
         throw new Error(res.message || 'Login failed');
       }
@@ -191,7 +200,7 @@ export default function LoginScreen() {
     const result = await signInWithGoogle(dispatch, (msg) => setServerError(msg));
     setIsGoogleLoading(false);
     if (result === 'success') {
-      router.replace('/(tabs)/home');
+      router.replace((returnTo as any) ?? '/(tabs)/home');
     }
   };
 
@@ -222,6 +231,13 @@ export default function LoginScreen() {
           colors={['#2DA9E9', '#1E88E5']}
           className="px-6 pt-8 pb-12 rounded-b-[40px]"
         >
+          <TouchableOpacity
+            onPress={handleClose}
+            style={{ position: 'absolute', top: 16, right: 16, zIndex: 10 }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="close" size={26} color="rgba(255,255,255,0.9)" />
+          </TouchableOpacity>
           <View className="items-center mt-4">
             <View className="w-20 h-20 bg-white rounded-2xl items-center justify-center mb-4 shadow-sm" style={{ borderWidth: 2, borderColor: 'rgba(255,255,255,0.6)' }}>
               <Image
@@ -446,7 +462,7 @@ export default function LoginScreen() {
             <Text className="text-gray-600 dark:text-gray-400">
               Don't have an account?{' '}
             </Text>
-            <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
+            <TouchableOpacity onPress={() => router.push({ pathname: '/(auth)/register', params: returnTo ? { returnTo } : {} })}>
               <Text className="text-tertiary-500 font-bold">Sign Up</Text>
             </TouchableOpacity>
           </View>

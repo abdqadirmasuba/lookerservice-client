@@ -47,6 +47,7 @@ const STATUS_CONFIG: Record<string, StatusConfig> = {
 export default function RequestsScreen() {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
   const { requests, isLoading, hasMore, offset, limit } = useAppSelector(
     (state) => state.requests
   );
@@ -55,8 +56,8 @@ export default function RequestsScreen() {
   const [closingId, setClosingId] = useState<string | null>(null);
 
   useEffect(() => {
-    loadRequests(true);
-  }, []);
+    if (isAuthenticated) loadRequests(true);
+  }, [isAuthenticated]);
 
   const loadRequests = async (reset = false) => {
     try {
@@ -128,6 +129,41 @@ export default function RequestsScreen() {
           <Text style={{ color: '#9CA3AF', marginTop: 12, fontSize: 14 }}>
             Loading requests…
           </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
+        <View style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 14, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#F3F4F6' }}>
+          <Text style={{ fontSize: 22, fontWeight: '800', color: '#111827' }}>My Requests</Text>
+        </View>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
+          <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: '#FFF7ED', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+            <Text style={{ fontSize: 32 }}>📋</Text>
+          </View>
+          <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827', textAlign: 'center', marginBottom: 8 }}>
+            Sign In to View Requests
+          </Text>
+          <Text style={{ fontSize: 13, color: '#6B7280', textAlign: 'center', lineHeight: 20, marginBottom: 28 }}>
+            Log in to post service requests and receive bids from providers.
+          </Text>
+          <TouchableOpacity
+            onPress={() => router.push('/(auth)/login')}
+            style={{ width: '100%', backgroundColor: '#2DA9E9', borderRadius: 16, paddingVertical: 14, alignItems: 'center', marginBottom: 12 }}
+            activeOpacity={0.85}
+          >
+            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>Log In</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.push('/(auth)/register')}
+            style={{ width: '100%', borderRadius: 16, paddingVertical: 14, alignItems: 'center', borderWidth: 1, borderColor: '#E5E7EB' }}
+            activeOpacity={0.85}
+          >
+            <Text style={{ color: '#1F2937', fontWeight: '700', fontSize: 15 }}>Create Account</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );

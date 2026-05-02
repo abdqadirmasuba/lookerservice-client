@@ -9,9 +9,9 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useAppDispatch } from '../src/store/hooks';
-import { loginSuccess, loginFailure, logout } from '../src/store/slices/authSlice';
+import { loginSuccess, loginFailure, logout, setPublicId } from '../src/store/slices/authSlice';
 import { setUser } from '../src/store/slices/userSlice';
-import { hasCompletedOnboarding, getRefreshToken, saveRefreshToken, removeRefreshToken } from '../src/utils/storage';
+import { hasCompletedOnboarding, getRefreshToken, saveRefreshToken, removeRefreshToken, getOrCreateDevicePublicId } from '../src/utils/storage';
 import { registerDevicePushToken } from '../src/utils/notifications';
 import { config } from '@/src/utils/apiConfig';
 
@@ -32,6 +32,10 @@ export default function AuthLoading() {
   }, []);
 
   const checkAuthStatus = async () => {
+    // Load (or generate on first run) the permanent device public ID
+    const devicePublicId = await getOrCreateDevicePublicId();
+    dispatch(setPublicId(devicePublicId));
+
     try {
       const onboardingComplete = await hasCompletedOnboarding();
 
@@ -45,8 +49,9 @@ export default function AuthLoading() {
       const refreshToken = await getRefreshToken();
 
       if (!refreshToken) {
+        // No session — let user browse as guest
         setTimeout(() => {
-          router.replace('/(auth)/login');
+          router.replace('/(tabs)/home');
         }, 1000);
         return;
       }
@@ -63,7 +68,7 @@ export default function AuthLoading() {
         await removeRefreshToken();
         dispatch(logout());
         setTimeout(() => {
-          router.replace('/(auth)/login');
+          router.replace('/(tabs)/home');
         }, 500);
         return;
       }
@@ -115,7 +120,7 @@ export default function AuthLoading() {
       dispatch(loginFailure(error?.message || 'Auth check failed'));
       await removeRefreshToken();
       setTimeout(() => {
-        router.replace('/(auth)/login');
+        router.replace('/(tabs)/home');
       }, 500);
     }
   };

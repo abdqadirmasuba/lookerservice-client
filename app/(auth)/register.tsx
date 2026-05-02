@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Image, Linking } from 'react-native';
 import { parsePhoneNumberFromString, AsYouType } from 'libphonenumber-js';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -31,7 +32,16 @@ function getFlagEmoji(isoCode: string): string {
 
 export default function RegisterScreen() {
   const router = useRouter();
+  const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
   const dispatch = useAppDispatch();
+
+  const handleClose = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(tabs)/home');
+    }
+  };
   const [activeTab, setActiveTab] = useState<TabType>('email');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -132,7 +142,7 @@ export default function RegisterScreen() {
     const result = await signInWithGoogle(dispatch, (msg) => setServerError(msg));
     setIsGoogleLoading(false);
     if (result === 'success') {
-      router.replace('/(tabs)/home');
+      router.replace((returnTo as any) ?? '/(tabs)/home');
     }
   };
 
@@ -199,6 +209,13 @@ export default function RegisterScreen() {
           colors={['#2DA9E9', '#1E88E5']}
           className="px-6 pt-8 pb-12 rounded-b-[40px]"
         >
+          <TouchableOpacity
+            onPress={handleClose}
+            style={{ position: 'absolute', top: 16, right: 16, zIndex: 10 }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="close" size={26} color="rgba(255,255,255,0.9)" />
+          </TouchableOpacity>
           <View className="items-center mt-4">
             <View className="w-20 h-20 bg-white rounded-2xl items-center justify-center mb-4 shadow-sm" style={{ borderWidth: 2, borderColor: 'rgba(255,255,255,0.6)' }}>
               <Image
@@ -460,7 +477,7 @@ export default function RegisterScreen() {
             <Text className="text-gray-600 dark:text-gray-400">
               Already have an account?{' '}
             </Text>
-            <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
+            <TouchableOpacity onPress={() => router.push({ pathname: '/(auth)/login', params: returnTo ? { returnTo } : {} })}>
               <Text className="text-tertiary-500 font-bold">Login</Text>
             </TouchableOpacity>
           </View>

@@ -64,6 +64,16 @@ export default function IntroScreen() {
     router.replace('/(auth)/register');
   };
 
+  const handleLogin = async () => {
+    await saveOnboardingComplete();
+    router.replace('/(auth)/login');
+  };
+
+  const handleBrowseAsGuest = async () => {
+    await saveOnboardingComplete();
+    router.replace('/(tabs)/home');
+  };
+
   const onScroll = (event: any) => {
     const offsetX = event.nativeEvent.contentOffset.x;
     scrollX.value = offsetX;
@@ -146,27 +156,32 @@ export default function IntroScreen() {
         })}
       </View>
 
-      {/* Get Started Button */}
+      {/* CTA Buttons */}
       <View className="px-6 pb-12 items-center">
+        {/* Primary: Create Account */}
         <TouchableOpacity
           onPress={handleGetStarted}
-          className="py-3 px-10 rounded-full"
+          className="w-full py-3.5 rounded-2xl items-center mb-3"
           style={{ backgroundColor: '#2DA9E9' }}
         >
-          <Text className="font-bold text-base text-white">
-            Get Started
-          </Text>
+          <Text className="font-bold text-base text-white">Create Account</Text>
         </TouchableOpacity>
+
+        {/* Secondary: Log In */}
         <TouchableOpacity
-          onPress={async () => {
-            await saveOnboardingComplete();
-            router.replace('/(auth)/login');
-          }}
-          className="mt-5 py-2"
+          onPress={handleLogin}
+          className="w-full py-3.5 rounded-2xl items-center mb-4 border border-gray-300"
         >
-          <Text className="text-base" style={{ color: '#444' }}>
-            Already have an account?{' '}
-            <Text className="font-bold" style={{ color: '#F57C1F' }}>Log in</Text>
+          <Text className="font-bold text-base" style={{ color: '#1F2937' }}>Log In</Text>
+        </TouchableOpacity>
+
+        {/* Ghost: Browse as Guest */}
+        <TouchableOpacity onPress={handleBrowseAsGuest} activeOpacity={0.7} className="py-2">
+          <Text className="text-sm text-gray-400">
+            Just browsing?{' '}
+            <Text className="font-semibold" style={{ color: '#F57C1F' }}>
+              Continue as Guest
+            </Text>
           </Text>
         </TouchableOpacity>
       </View>

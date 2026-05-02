@@ -13,14 +13,17 @@ export default function HomeScreen() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const user = useAppSelector((state) => state.user.user);
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
   const dashboardSummary = useAppSelector((state) => state.dashboard.summary);
   const unreadCount = useAppSelector((state) => state.notifications.unreadCount);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    loadDashboard();
-    fetchUnreadCount();
-  }, []);
+    if (isAuthenticated) {
+      loadDashboard();
+      fetchUnreadCount();
+    }
+  }, [isAuthenticated]);
 
   const fetchUnreadCount = async () => {
     try {
@@ -50,13 +53,10 @@ export default function HomeScreen() {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([loadDashboard(), fetchUnreadCount()]);
+    if (isAuthenticated) {
+      await Promise.all([loadDashboard(), fetchUnreadCount()]);
+    }
     setRefreshing(false);
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
   return (
@@ -64,30 +64,64 @@ export default function HomeScreen() {
       <ScrollView
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {/* Header with Notifications */}
+        {/* Header */}
         <View className="px-6 pt-4 pb-6 bg-white">
           <View className="flex-row justify-between items-start mb-4">
             <View className="flex-1">
               <Text className="text-2xl font-bold text-gray-900 mb-1">
-                Hello, {user?.fullName || 'Guest'}!
+                Hello, {isAuthenticated ? (user?.fullName || 'there') : 'Guest'}!
               </Text>
-              <Text className="text-gray-600">Welcome back to your dashboard</Text>
+              <Text className="text-gray-600">
+                {isAuthenticated ? 'Welcome back to your dashboard' : 'Find services near you'}
+              </Text>
             </View>
-            <TouchableOpacity 
-              onPress={() => router.push('/notifications-list')}
-              className="w-12 h-12 rounded-full bg-gray-100 items-center justify-center relative"
-            >
-              <Ionicons name="notifications-outline" size={24} color="#1F2937" />
-              {unreadCount > 0 && (
-                <View className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 rounded-full items-center justify-center">
-                  <Text className="text-white text-xs font-bold">
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </Text>
-                </View>
-              )}
-            </TouchableOpacity>
+            {isAuthenticated && (
+              <TouchableOpacity
+                onPress={() => router.push('/notifications-list')}
+                className="w-12 h-12 rounded-full bg-gray-100 items-center justify-center relative"
+              >
+                <Ionicons name="notifications-outline" size={24} color="#1F2937" />
+                {unreadCount > 0 && (
+                  <View className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 rounded-full items-center justify-center">
+                    <Text className="text-white text-xs font-bold">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            )}
           </View>
         </View>
+
+        {/* Guest Sign-In Banner */}
+        {!isAuthenticated && (
+          <View className="mx-6 mt-4 mb-2 rounded-2xl overflow-hidden border border-blue-100">
+            <View className="px-5 py-4 flex-row items-center" style={{ backgroundColor: '#EFF8FF' }}>
+              <View className="w-10 h-10 rounded-full bg-primary-100 items-center justify-center mr-3">
+                <Ionicons name="person-outline" size={20} color="#2DA9E9" />
+              </View>
+              <View className="flex-1">
+                <Text className="font-bold text-gray-800 text-sm mb-0.5">Sign in for full access</Text>
+                <Text className="text-gray-500 text-xs">Track bookings, requests & more</Text>
+              </View>
+              <View className="flex-row gap-2 ml-2">
+                <TouchableOpacity
+                  onPress={() => router.push('/(auth)/login')}
+                  className="px-3 py-1.5 rounded-xl"
+                  style={{ backgroundColor: '#2DA9E9' }}
+                >
+                  <Text className="text-white text-xs font-bold">Log In</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => router.push('/(auth)/register')}
+                  className="px-3 py-1.5 rounded-xl border border-gray-300 bg-white"
+                >
+                  <Text className="text-gray-700 text-xs font-bold">Register</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        )}
 
         {/* Call to Action — Find a Service */}
         <View className="px-6 pt-4 pb-6 bg-white mb-4">
@@ -113,169 +147,107 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Dashboard Summary Cards */}
-        <View className="px-6 mb-6">
-          <View className="flex-row gap-4">
-            <View className="flex-1 bg-blue-50 rounded-xl p-4">
-              <Text className="text-3xl font-bold text-blue-600 mb-1">
-                {dashboardSummary?.active_requests_count || 0}
-              </Text>
-              <Text className="text-gray-700 font-medium">Active Requests</Text>
-            </View>
-            <View className="flex-1 rounded-xl p-4" style={{ backgroundColor: '#FFF7ED' }}>
-              <Text className="text-3xl font-bold mb-1" style={{ color: '#F57C1F' }}>
-                {dashboardSummary?.active_bookings_count || 0}
-              </Text>
-              <Text className="text-gray-700 font-medium">Active Bookings</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Active Requests Section */}
-        {dashboardSummary && dashboardSummary.active_requests_count > 0 && (
-          <View className="px-6 mb-6">
-            <View className="flex-row justify-between items-center mb-4">
-              <Text className="text-xl font-bold text-gray-900">Active Requests</Text>
-              <TouchableOpacity onPress={() => router.push('/(tabs)/requests')}>
-                <Text className="text-primary-500 font-medium">View All</Text>
-              </TouchableOpacity>
-            </View>
-            {/* {dashboardSummary.active_requests.map((request) => (
-              <TouchableOpacity
-                key={request.id}
-                onPress={() => router.push(`/(service-request)/${request.id}`)}
-                className="bg-white rounded-xl p-4 mb-3 shadow-sm"
-              >
-                <View className="flex-row justify-between items-start mb-2">
-                  <Text className="text-sm font-semibold text-gray-500">
-                    {request.request_number}
+        {/* Authenticated: Dashboard Summary Cards */}
+        {isAuthenticated && (
+          <>
+            <View className="px-6 mb-6">
+              <View className="flex-row gap-4">
+                <View className="flex-1 bg-blue-50 rounded-xl p-4">
+                  <Text className="text-3xl font-bold text-blue-600 mb-1">
+                    {dashboardSummary?.active_requests_count || 0}
                   </Text>
-                  <View className="bg-blue-100 px-3 py-1 rounded-full">
-                    <Text className="text-xs font-semibold text-blue-700 capitalize">
-                      {request.status}
-                    </Text>
-                  </View>
+                  <Text className="text-gray-700 font-medium">Active Requests</Text>
                 </View>
-                <Text className="font-bold text-gray-900 mb-2" numberOfLines={2}>
-                  {request.title}
-                </Text>
-                <View className="flex-row justify-between items-center">
-                  <View>
-                    <Text className="text-xs text-gray-600">
-                      {request.request_type === 'direct' ? '📍 Direct Request' : '📢 Open Request'}
-                    </Text>
-                    {request.target_provider_name && (
-                      <Text className="text-xs text-gray-600 mt-1">
-                        To: {request.target_provider_name}
-                      </Text>
-                    )}
-                  </View>
-                  <View className="items-end">
-                    <Text className="text-xs text-gray-500">{formatDate(request.created_at)}</Text>
-                    <Text className="text-xs text-gray-600 mt-1">
-                      {request.bid_count} {request.bid_count === 1 ? 'bid' : 'bids'}
-                    </Text>
-                  </View>
+                <View className="flex-1 rounded-xl p-4" style={{ backgroundColor: '#FFF7ED' }}>
+                  <Text className="text-3xl font-bold mb-1" style={{ color: '#F57C1F' }}>
+                    {dashboardSummary?.active_bookings_count || 0}
+                  </Text>
+                  <Text className="text-gray-700 font-medium">Active Bookings</Text>
                 </View>
-              </TouchableOpacity>
-            ))} */}
-          </View>
+              </View>
+            </View>
+
+            {/* Quick Navigation */}
+            <View className="px-6 mb-6">
+              <Text className="text-xl font-bold text-gray-900 mb-4">Quick Actions</Text>
+              <View className="space-y-3">
+                <TouchableOpacity
+                  onPress={() => router.push('/(tabs)/requests')}
+                  className="bg-white rounded-xl p-5 shadow-sm flex-row items-center"
+                >
+                  <View className="w-12 h-12 bg-blue-100 rounded-full items-center justify-center mr-4">
+                    <Text className="text-2xl">📋</Text>
+                  </View>
+                  <View className="flex-1">
+                    <Text className="font-bold text-gray-900 text-base">My Requests</Text>
+                    <Text className="text-gray-600 text-sm">View all your service requests</Text>
+                  </View>
+                  <Text className="text-gray-400 text-xl">›</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => router.push('/(tabs)/bookings')}
+                  className="bg-white rounded-xl p-5 shadow-sm flex-row items-center"
+                >
+                  <View className="w-12 h-12 bg-green-100 rounded-full items-center justify-center mr-4">
+                    <Text className="text-2xl">📅</Text>
+                  </View>
+                  <View className="flex-1">
+                    <Text className="font-bold text-gray-900 text-base">My Bookings</Text>
+                    <Text className="text-gray-600 text-sm">Manage your active bookings</Text>
+                  </View>
+                  <Text className="text-gray-400 text-xl">›</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </>
         )}
 
-        {/* Active Bookings Section */}
-        {dashboardSummary && dashboardSummary.active_bookings_count > 0 && (
+        {/* Guest: Feature Highlights */}
+        {!isAuthenticated && (
           <View className="px-6 mb-6">
-            <View className="flex-row justify-between items-center mb-4">
-              <Text className="text-xl font-bold text-gray-900">Active Bookings</Text>
-              <TouchableOpacity onPress={() => router.push('/(tabs)/bookings')}>
-                <Text className="text-primary-500 font-medium">View All</Text>
-              </TouchableOpacity>
+            <Text className="text-xl font-bold text-gray-900 mb-4">What You Can Do</Text>
+            <View className="space-y-3">
+              <View className="bg-white rounded-xl p-4 flex-row items-center shadow-sm border border-gray-100">
+                <Text className="text-2xl mr-3">🔍</Text>
+                <View className="flex-1">
+                  <Text className="font-semibold text-gray-800">Browse Providers</Text>
+                  <Text className="text-gray-500 text-xs mt-0.5">Search across all service categories</Text>
+                </View>
+                <View className="bg-green-100 px-2 py-0.5 rounded-full">
+                  <Text className="text-green-700 text-[10px] font-bold">FREE</Text>
+                </View>
+              </View>
+              <View className="bg-white rounded-xl p-4 flex-row items-center shadow-sm border border-gray-100">
+                <Text className="text-2xl mr-3">📋</Text>
+                <View className="flex-1">
+                  <Text className="font-semibold text-gray-800">Post Requests</Text>
+                  <Text className="text-gray-500 text-xs mt-0.5">Get bids from multiple providers</Text>
+                </View>
+                <View className="bg-blue-100 px-2 py-0.5 rounded-full">
+                  <Text className="text-blue-700 text-[10px] font-bold">SIGN IN</Text>
+                </View>
+              </View>
+              <View className="bg-white rounded-xl p-4 flex-row items-center shadow-sm border border-gray-100">
+                <Text className="text-2xl mr-3">📅</Text>
+                <View className="flex-1">
+                  <Text className="font-semibold text-gray-800">Book Services</Text>
+                  <Text className="text-gray-500 text-xs mt-0.5">Secure bookings with safe payments</Text>
+                </View>
+                <View className="bg-blue-100 px-2 py-0.5 rounded-full">
+                  <Text className="text-blue-700 text-[10px] font-bold">SIGN IN</Text>
+                </View>
+              </View>
             </View>
-            {/* {dashboardSummary.active_bookings.map((booking) => (
-              <TouchableOpacity
-                key={booking.id}
-                onPress={() => router.push(`/(bookings)/${booking.id}`)}
-                className="bg-white rounded-xl p-4 mb-3 shadow-sm"
-              >
-                <View className="flex-row justify-between items-start mb-2">
-                  <Text className="text-sm font-semibold text-gray-500">
-                    {booking.booking_number}
-                  </Text>
-                  <View className="bg-green-100 px-3 py-1 rounded-full">
-                    <Text className="text-xs font-semibold text-green-700 capitalize">
-                      {booking.status}
-                    </Text>
-                  </View>
-                </View>
-                <Text className="font-bold text-gray-900 mb-2" numberOfLines={2}>
-                  {booking.service_title}
-                </Text>
-                <View className="flex-row justify-between items-center">
-                  <Text className="text-sm text-gray-600">
-                    👤 {booking.provider_name}
-                  </Text>
-                  <Text className="text-xs text-gray-500">
-                    {formatDate(booking.scheduled_date)}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            ))} */}
           </View>
         )}
-
-        {/* Quick Navigation Cards */}
-        <View className="px-6 mb-6">
-          <Text className="text-xl font-bold text-gray-900 mb-4">Quick Actions</Text>
-          <View className="space-y-3">
-            <TouchableOpacity 
-              onPress={() => router.push('/(tabs)/requests')}
-              className="bg-white rounded-xl p-5 shadow-sm flex-row items-center"
-            >
-              <View className="w-12 h-12 bg-blue-100 rounded-full items-center justify-center mr-4">
-                <Text className="text-2xl">📋</Text>
-              </View>
-              <View className="flex-1">
-                <Text className="font-bold text-gray-900 text-base">My Requests</Text>
-                <Text className="text-gray-600 text-sm">View all your service requests</Text>
-              </View>
-              <Text className="text-gray-400 text-xl">›</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              onPress={() => router.push('/(tabs)/bookings')}
-              className="bg-white rounded-xl p-5 shadow-sm flex-row items-center"
-            >
-              <View className="w-12 h-12 bg-green-100 rounded-full items-center justify-center mr-4">
-                <Text className="text-2xl">📅</Text>
-              </View>
-              <View className="flex-1">
-                <Text className="font-bold text-gray-900 text-base">My Bookings</Text>
-                <Text className="text-gray-600 text-sm">Manage your active bookings</Text>
-              </View>
-              <Text className="text-gray-400 text-xl">›</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              onPress={() => router.push('/(explore)/explore')}
-              className="bg-white rounded-xl p-5 shadow-sm flex-row items-center"
-            >
-              <View className="w-12 h-12 rounded-full items-center justify-center mr-4" style={{ backgroundColor: '#FFF7ED' }}>
-                <Text className="text-2xl">🔍</Text>
-              </View>
-              <View className="flex-1">
-                <Text className="font-bold text-gray-900 text-base">Find a Service</Text>
-                <Text className="text-gray-600 text-sm">Browse providers near you</Text>
-              </View>
-              <Text className="text-gray-400 text-xl">›</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
 
         {/* Help Section */}
         <View className="px-6 mb-8">
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={() => router.push('/(account)/help')}
-            className="bg-gradient-to-br bg-blue-500 rounded-xl p-6 shadow-sm"
+            className="rounded-xl p-6 shadow-sm"
+            style={{ backgroundColor: '#2DA9E9' }}
           >
             <View className="flex-row items-center mb-3">
               <View className="w-12 h-12 bg-white/20 rounded-full items-center justify-center mr-4">
@@ -287,7 +259,7 @@ export default function HomeScreen() {
               </View>
             </View>
             <View className="bg-white rounded-lg py-3 items-center">
-              <Text className="text-blue-600 font-semibold">Contact Support</Text>
+              <Text className="font-semibold" style={{ color: '#2DA9E9' }}>Contact Support</Text>
             </View>
           </TouchableOpacity>
         </View>

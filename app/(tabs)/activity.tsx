@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { apiRequests } from '@/src/utils/apiRequests';
+import { useAppSelector } from '@/src/store/hooks';
 
 const ORANGE = '#F57C1F';
 
@@ -53,12 +54,14 @@ function StarRating({ rating }: { rating: number }) {
 
 export default function ActivityScreen() {
   const router = useRouter();
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
   const [providers, setProviders] = useState<ViewedProvider[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
 
   const fetchHistory = useCallback(async () => {
+    if (!isAuthenticated) return;
     setError('');
     try {
       const res = await apiRequests.get('/client/viewed-providers');
@@ -73,11 +76,47 @@ export default function ActivityScreen() {
       setIsLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [isAuthenticated]);
 
-  useEffect(() => { fetchHistory(); }, [fetchHistory]);
+  useEffect(() => { if (isAuthenticated) fetchHistory(); else setIsLoading(false); }, [fetchHistory, isAuthenticated]);
 
   const onRefresh = () => { setRefreshing(true); fetchHistory(); };
+
+  if (!isAuthenticated) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>My Activity</Text>
+          <Text style={styles.headerSubtitle}>Providers you've recently viewed</Text>
+        </View>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
+          <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: '#EFF8FF', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+            <Ionicons name="time-outline" size={34} color="#2DA9E9" />
+          </View>
+          <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827', textAlign: 'center', marginBottom: 8 }}>
+            Sign In to View Activity
+          </Text>
+          <Text style={{ fontSize: 13, color: '#6B7280', textAlign: 'center', lineHeight: 20, marginBottom: 28 }}>
+            Log in to see the providers you've recently browsed.
+          </Text>
+          <TouchableOpacity
+            onPress={() => router.push('/(auth)/login')}
+            style={{ width: '100%', backgroundColor: '#2DA9E9', borderRadius: 16, paddingVertical: 14, alignItems: 'center', marginBottom: 12 }}
+            activeOpacity={0.85}
+          >
+            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>Log In</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.push('/(auth)/register')}
+            style={{ width: '100%', borderRadius: 16, paddingVertical: 14, alignItems: 'center', borderWidth: 1, borderColor: '#E5E7EB' }}
+            activeOpacity={0.85}
+          >
+            <Text style={{ color: '#1F2937', fontWeight: '700', fontSize: 15 }}>Create Account</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#F9FAFB' }}>

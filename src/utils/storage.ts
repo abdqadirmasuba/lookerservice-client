@@ -78,6 +78,7 @@ export const hasCompletedOnboarding = async (): Promise<boolean> => {
 };
 
 // Clear all storage (for logout)
+// NOTE: intentionally does NOT clear DEVICE_PUBLIC_ID — it must survive logout
 export const clearAllStorage = async (): Promise<void> => {
   try {
     await AsyncStorage.multiRemove([
@@ -87,6 +88,33 @@ export const clearAllStorage = async (): Promise<void> => {
     ]);
   } catch (error) {
     console.error('Error clearing storage:', error);
+  }
+};
+
+// ── Device Public ID ──────────────────────────────────────────────────────────
+// A UUID generated once on first install and persisted permanently.
+// Identifies this app installation even for unauthenticated (guest) users.
+// Survives app restarts; regenerates only on a clean reinstall.
+
+function generateUUID(): string {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
+export const getOrCreateDevicePublicId = async (): Promise<string> => {
+  try {
+    const existing = await AsyncStorage.getItem(STORAGE_KEYS.DEVICE_PUBLIC_ID);
+    if (existing) return existing;
+    const newId = generateUUID();
+    await AsyncStorage.setItem(STORAGE_KEYS.DEVICE_PUBLIC_ID, newId);
+    return newId;
+  } catch (error) {
+    console.error('Error getting/creating device public ID:', error);
+    // Fallback: return a temporary ID for this session so requests still work
+    return generateUUID();
   }
 };
 

@@ -26,7 +26,6 @@ export async function signInWithGoogle(
     onError?: (message: string) => void,
 ): Promise<GoogleAuthResult> {
     try {
-        console.log('Starting Google sign-in process');
         dispatch(loginStart());
         GoogleSignin.configure({
             webClientId: config.clientId,
@@ -74,6 +73,10 @@ export async function signInWithGoogle(
 
                 return 'success';
             } catch (error: any) {
+                // Sign out from Google so the next attempt can re-authenticate cleanly.
+                // This is critical when the backend rejects the Google account because
+                // the email is already registered with a password-based account.
+                try { await GoogleSignin.signOut(); } catch (_) { /* ignore */ }
                 const message = error.response?.data?.message || error.message || 'Authentication failed';
                 dispatch(loginFailure(message));
                 onError?.(message);
@@ -84,7 +87,6 @@ export async function signInWithGoogle(
             return 'cancelled';
         }
     } catch (error) {
-        console.log('Google sign-in error:', error);
         if (isErrorWithCode(error)) {
             switch (error.code) {
                 case statusCodes.SIGN_IN_CANCELLED:

@@ -8,7 +8,6 @@ const api = axios.create({
   },
 });
 
-console.log('API Base URL:', config.domain_url);
 // Add interceptor to include Authorization header only if token exists
 api.interceptors.request.use(
   async (config) => {
@@ -16,10 +15,15 @@ api.interceptors.request.use(
     const { store } = await import('../store');
     const state = store.getState();
     const authtoken = state.auth.token;
+    // const publicId = state.auth.publicId;
 
     if (authtoken) {
       config.headers.Authorization = `Bearer ${authtoken}`;
     }
+
+    // if (publicId) {
+    //   config.headers['X-Public-ID'] = publicId;
+    // }
 
     return config;
   },

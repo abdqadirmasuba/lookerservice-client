@@ -53,7 +53,6 @@ function NotificationSetup() {
     // Fired when the user taps a notification (foreground or background)
     responseListener.current = Notifications.addNotificationResponseReceivedListener(
       (response) => {
-        console.log('[NotificationTap]', response.notification.request.content);
         // TODO: navigate based on response.notification.request.content.data when backend is integrated
       }
     );
