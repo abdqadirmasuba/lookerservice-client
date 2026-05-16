@@ -73,16 +73,8 @@ export async function registerForPushNotificationsAsync(): Promise<string> {
 export async function registerDevicePushToken(): Promise<void> {
   try {
     const token = await registerForPushNotificationsAsync();
-    const deviceType: 'ios' | 'android' = Platform.OS === 'ios' ? 'ios' : 'android';
-    const deviceName = Device.deviceName ?? 'Unknown Device';
-    const appVersion = Constants.expoConfig?.version ?? '1.0.0';
 
-    await api.post('/notifications/device-token', {
-      token,
-      device_type: deviceType,
-      device_name: deviceName,
-      app_version: appVersion,
-    });
+    await api.post('/notifications/device-token', { token });
   } catch {
     // Fail silently
   }

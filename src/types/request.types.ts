@@ -1,11 +1,21 @@
 export type RequestType = 'direct' | 'open';
 export type RequestStatus = 'open' | 'responded' | 'rejected' | 'in_progress' | 'completed' | 'cancelled' | 'closed';
 
+export interface ServiceRequestServiceItem {
+  label: string;
+  amount?: number;
+  currency?: string;
+}
+
 export interface ServiceRequestService {
   id: string;
   title: string;
   service_name: string;
+  service_icon?: string;
+  service_icon_url?: string;
   category_name?: string;
+  category_icon?: string;
+  items?: ServiceRequestServiceItem[];
 }
 
 export interface ServiceRequest {
@@ -27,6 +37,7 @@ export interface ServiceRequest {
   business_name?: string;
   business_logo?: string | null;
   // Detail response fields
+  provider_response?: string;
   services?: ServiceRequestService[];
   bid_count?: number;
   target_provider_id?: string;

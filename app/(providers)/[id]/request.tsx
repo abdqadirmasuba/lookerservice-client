@@ -28,12 +28,18 @@ const ORANGE = '#F57C1F';
 const VISIBLE_COUNT = 4;
 
 // ─── Types ───────────────────────────────────────────────────────────────────
+interface ServiceListItem {
+  label: string;
+  amount?: number;
+  currency?: string;
+  image_urls?: string[];
+}
+
 interface ProviderInfoService {
   provider_service_id: string;
   service_id: string;
   service_name: string;
-  provider_description: string;
-  pricing_type: 'fixed' | 'hourly' | 'negotiable';
+  service_list: ServiceListItem[];
   service_icon_url: string;
 }
 
@@ -55,12 +61,6 @@ interface PickedImage {
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-function pricingLabel(type: string) {
-  if (type === 'fixed') return 'Fixed price';
-  if (type === 'hourly') return 'Per hour';
-  return 'Negotiable';
-}
-
 function availabilityMeta(status: string) {
   if (status === 'available') return { label: 'Available', color: '#16A34A', bg: '#DCFCE7' };
   if (status === 'busy') return { label: 'Busy', color: '#D97706', bg: '#FEF3C7' };
@@ -74,11 +74,172 @@ function formatDate(d: Date) {
   });
 }
 
+// ─── Image Viewer Modal ───────────────────────────────────────────────────────
+function ImageViewerModal({
+  images,
+  initialIndex,
+  onClose,
+}: {
+  images: string[];
+  initialIndex: number;
+  onClose: () => void;
+}) {
+  const [index, setIndex] = useState(initialIndex);
+  const insets = useSafeAreaInsets();
+  return (
+    <Modal visible animationType="fade" statusBarTranslucent>
+      <View style={{ flex: 1, backgroundColor: '#000' }}>
+        {/* Counter */}
+        <View style={{ position: 'absolute', top: insets.top + 14, left: 0, right: 0, alignItems: 'center', zIndex: 10 }}>
+          <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 13 }}>{index + 1} / {images.length}</Text>
+        </View>
+        {/* Close */}
+        <View style={{ position: 'absolute', top: insets.top + 10, right: 14, zIndex: 10 }}>
+          <TouchableOpacity
+            onPress={onClose}
+            style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Ionicons name="close" size={22} color="#fff" />
+          </TouchableOpacity>
+        </View>
+        {/* Image */}
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <Image
+            source={{ uri: images[index] }}
+            style={{ width: '100%', height: '80%' }}
+            resizeMode="contain"
+          />
+        </View>
+        {/* Prev */}
+        {index > 0 && (
+          <View style={{ position: 'absolute', top: '50%', left: 12, marginTop: -20 }}>
+            <TouchableOpacity
+              onPress={() => setIndex((i) => i - 1)}
+              style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <Ionicons name="chevron-back" size={24} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        )}
+        {/* Next */}
+        {index < images.length - 1 && (
+          <View style={{ position: 'absolute', top: '50%', right: 12, marginTop: -20 }}>
+            <TouchableOpacity
+              onPress={() => setIndex((i) => i + 1)}
+              style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <Ionicons name="chevron-forward" size={24} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    </Modal>
+  );
+}
+
+// ─── Service Detail Modal ─────────────────────────────────────────────────────
+function ServiceDetailModal({
+  service,
+  selectedItems,
+  onToggleItem,
+  onClose,
+  onOpenImage,
+}: {
+  service: ProviderInfoService;
+  selectedItems: ServiceListItem[];
+  onToggleItem: (item: ServiceListItem) => void;
+  onClose: () => void;
+  onOpenImage: (images: string[], index: number) => void;
+}) {
+  return (
+    <Modal visible animationType="fade" transparent>
+      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'center', alignItems: 'center' }}>
+        <View style={{ width: '90%', maxHeight: '80%', backgroundColor: '#fff', borderRadius: 24, overflow: 'hidden' }}>
+          {/* Header */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' }}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 16, fontWeight: '800', color: '#111827' }} numberOfLines={2}>
+                {service.service_name}
+              </Text>
+              <Text style={{ fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>
+                {service.service_list.length} item{service.service_list.length !== 1 ? 's' : ''}
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={onClose}
+              style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center', marginLeft: 12 }}
+            >
+              <Ionicons name="close" size={20} color="#374151" />
+            </TouchableOpacity>
+          </View>
+          {/* Items */}
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, paddingBottom: 20 }}>
+            {service.service_list.map((item, idx) => {
+              const isItemSelected = selectedItems.some((s) => s.label === item.label);
+              return (
+                <View key={idx}>
+                  {/* Item header */}
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 }}>
+                    <TouchableOpacity
+                      onPress={() => onToggleItem(item)}
+                      style={{
+                        width: 22, height: 22, borderRadius: 6, borderWidth: 2,
+                        borderColor: isItemSelected ? ORANGE : '#D1D5DB',
+                        backgroundColor: isItemSelected ? ORANGE : '#F9FAFB',
+                        alignItems: 'center', justifyContent: 'center',
+                        marginRight: 10, marginTop: 1, flexShrink: 0,
+                      }}
+                    >
+                      {isItemSelected && <Ionicons name="checkmark" size={13} color="#fff" />}
+                    </TouchableOpacity>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: '#1F2937' }}>{item.label}</Text>
+                      {item.amount !== undefined && (
+                        <Text style={{ fontSize: 12, color: ORANGE, fontWeight: '700', marginTop: 2 }}>
+                          {item.currency ?? 'UGX'} {item.amount.toLocaleString()}
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                  {/* Images */}
+                  {item.image_urls && item.image_urls.length > 0 && (
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+                      <View style={{ flexDirection: 'row' }}>
+                        {item.image_urls.map((uri, imgIdx) => (
+                          <TouchableOpacity
+                            key={imgIdx}
+                            onPress={() => onOpenImage(item.image_urls!, imgIdx)}
+                            activeOpacity={0.85}
+                            style={{ marginRight: 8 }}
+                          >
+                            <Image
+                              source={{ uri }}
+                              style={{ width: 88, height: 88, borderRadius: 12, backgroundColor: '#F3F4F6' }}
+                              resizeMode="cover"
+                            />
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    </ScrollView>
+                  )}
+                  {/* Divider */}
+                  {idx < service.service_list.length - 1 && (
+                    <View style={{ height: 1, backgroundColor: '#F3F4F6', marginBottom: 14 }} />
+                  )}
+                </View>
+              );
+            })}
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 // ─── Map Picker Modal ─────────────────────────────────────────────────────────
 function MapPickerModal({
-  visible, initialLat, initialLng, onConfirm, onCancel,
+  initialLat, initialLng, onConfirm, onCancel,
 }: {
-  visible: boolean;
   initialLat: number;
   initialLng: number;
   onConfirm: (lat: number, lng: number) => void;
@@ -86,10 +247,6 @@ function MapPickerModal({
 }) {
   const insets = useSafeAreaInsets();
   const [pin, setPin] = useState({ lat: initialLat, lng: initialLng });
-
-  useEffect(() => {
-    if (visible) setPin({ lat: initialLat, lng: initialLng });
-  }, [visible, initialLat, initialLng]);
 
   const region: Region = {
     latitude: pin.lat || 0.3155,
@@ -99,7 +256,7 @@ function MapPickerModal({
   };
 
   return (
-    <Modal visible={visible} animationType="slide" statusBarTranslucent>
+    <Modal visible animationType="slide" statusBarTranslucent>
       <View className="flex-1 bg-white">
         <View
           className="flex-row items-center justify-between bg-white px-4 pb-3 border-b border-gray-100"
@@ -210,6 +367,10 @@ export default function ProviderRequestScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [selectedItems, setSelectedItems] = useState<Record<string, ServiceListItem[]>>({});
+  const [expandedServices, setExpandedServices] = useState<Set<string>>(new Set());
+  const [detailService, setDetailService] = useState<ProviderInfoService | null>(null);
+  const [imageViewer, setImageViewer] = useState<{ images: string[]; index: number } | null>(null);
   const [showAll, setShowAll] = useState(false);
 
   // Optional toggles & values
@@ -250,7 +411,10 @@ export default function ProviderRequestScreen() {
         setInfo(data);
         if (service_id) {
           const matched = data.services.find((s) => s.service_id === service_id);
-          if (matched) setSelected(new Set([matched.provider_service_id]));
+          if (matched) {
+            setSelected(new Set([matched.provider_service_id]));
+            setExpandedServices(new Set([matched.provider_service_id]));
+          }
         }
       } else {
         setError(res.data.message || 'Failed to load provider info');
@@ -268,9 +432,31 @@ export default function ProviderRequestScreen() {
   const toggleService = (psid: string) => {
     setSelected((prev) => {
       const next = new Set(prev);
-      if (next.has(psid)) next.delete(psid);
-      else next.add(psid);
+      if (next.has(psid)) {
+        next.delete(psid);
+        setSelectedItems((si) => { const n = { ...si }; delete n[psid]; return n; });
+      } else {
+        next.add(psid);
+      }
       return next;
+    });
+  };
+
+  const toggleItem = (psid: string, item: ServiceListItem) => {
+    setSelected((prev) => { const n = new Set(prev); n.add(psid); return n; });
+    setSelectedItems((prev) => {
+      const existing = prev[psid] ?? [];
+      const idx = existing.findIndex((i) => i.label === item.label);
+      if (idx >= 0) return { ...prev, [psid]: existing.filter((_, i) => i !== idx) };
+      return { ...prev, [psid]: [...existing, item] };
+    });
+  };
+
+  const toggleExpanded = (psid: string) => {
+    setExpandedServices((prev) => {
+      const n = new Set(prev);
+      if (n.has(psid)) n.delete(psid); else n.add(psid);
+      return n;
     });
   };
 
@@ -361,7 +547,14 @@ export default function ProviderRequestScreen() {
 
       const payload: Record<string, any> = {
         target_provider_id: id,
-        provider_service_ids: Array.from(selected),
+        provider_services: Array.from(selected).map((psid) => ({
+          id: psid,
+          items: (selectedItems[psid] ?? []).map(({ label, amount, currency }) => ({
+            label,
+            ...(amount !== undefined && { amount }),
+            ...(currency !== undefined && { currency }),
+          })),
+        })),
         latitude: locationEnabled && locationSet ? latitude : 0,
         longitude: locationEnabled && locationSet ? longitude : 0,
       };
@@ -551,50 +744,102 @@ export default function ProviderRequestScreen() {
             <View className="rounded-2xl overflow-hidden border border-gray-100">
               {displayedServices.map((svc) => {
                 const checked = selected.has(svc.provider_service_id);
+                const isExpanded = expandedServices.has(svc.provider_service_id);
                 const isPrimary = svc.provider_service_id === matchedPsid;
+                const svcItems = selectedItems[svc.provider_service_id] ?? [];
                 return (
-                  <TouchableOpacity
-                    key={svc.provider_service_id}
-                    onPress={() => toggleService(svc.provider_service_id)}
-                    activeOpacity={0.8}
-                    className={`flex-row items-center px-3.5 py-3 border-b ${
-                      checked ? 'bg-yellow-50 border-yellow-200' : 'bg-white border-gray-50'
-                    }`}
-                  >
-                    <View
-                      className={`w-[21px] h-[21px] rounded-[6px] border-2 items-center justify-center mr-3 shrink-0 ${
-                        checked ? 'bg-tertiary-500 border-tertiary-500' : 'bg-gray-50 border-gray-300'
+                  <View key={svc.provider_service_id}>
+                    {/* Service header row */}
+                    <TouchableOpacity
+                      onPress={() => toggleService(svc.provider_service_id)}
+                      activeOpacity={0.8}
+                      className={`flex-row items-center px-3.5 py-3 border-b ${
+                        checked ? 'bg-yellow-50 border-yellow-200' : 'bg-white border-gray-50'
                       }`}
                     >
-                      {checked && <Ionicons name="checkmark" size={13} color="#fff" />}
-                    </View>
-                    <View className="w-9 h-9 rounded-[10px] bg-orange-50 items-center justify-center mr-3 shrink-0">
-                      <SvgIcon uri={svc.service_icon_url} size={22} fallback="⚙️" />
-                    </View>
-                    <View className="flex-1">
-                      <View className="flex-row items-center">
-                        <Text
-                          className={`text-[13px] font-semibold flex-1 ${checked ? 'text-gray-900' : 'text-gray-700'}`}
-                          numberOfLines={1}
-                        >
-                          {svc.service_name}
-                        </Text>
-                        {isPrimary && (
-                          <View className="bg-blue-50 px-1.5 py-0.5 rounded-[10px] ml-1.5">
-                            <Text className="text-[10px] text-primary-500 font-bold">Selected</Text>
-                          </View>
+                      <View
+                        className={`w-[21px] h-[21px] rounded-[6px] border-2 items-center justify-center mr-3 shrink-0 ${
+                          checked ? 'bg-tertiary-500 border-tertiary-500' : 'bg-gray-50 border-gray-300'
+                        }`}
+                      >
+                        {checked && <Ionicons name="checkmark" size={13} color="#fff" />}
+                      </View>
+                      <View className="w-9 h-9 rounded-[10px] bg-orange-50 items-center justify-center mr-3 shrink-0">
+                        <SvgIcon uri={svc.service_icon_url} size={22} fallback="⚙️" />
+                      </View>
+                      <View className="flex-1">
+                        <View className="flex-row items-center">
+                          <Text
+                            className={`text-[13px] font-semibold flex-1 ${checked ? 'text-gray-900' : 'text-gray-700'}`}
+                            numberOfLines={1}
+                          >
+                            {svc.service_name}
+                          </Text>
+                          {isPrimary && (
+                            <View className="bg-blue-50 px-1.5 py-0.5 rounded-[10px] ml-1.5">
+                              <Text className="text-[10px] text-primary-500 font-bold">Selected</Text>
+                            </View>
+                          )}
+                        </View>
+                        {svcItems.length > 0 && (
+                          <Text className="text-[11px] text-tertiary-500 font-medium mt-0.5">
+                            {svcItems.length} item{svcItems.length !== 1 ? 's' : ''} selected
+                          </Text>
                         )}
                       </View>
-                      {svc.provider_description ? (
-                        <Text className="text-[11px] text-gray-400 mt-0.5" numberOfLines={1}>
-                          {svc.provider_description}
-                        </Text>
-                      ) : null}
-                      <Text className="text-[11px] text-tertiary-500 font-semibold mt-0.5">
-                        {pricingLabel(svc.pricing_type)}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
+                      {/* Info popup */}
+                      <TouchableOpacity
+                        onPress={() => setDetailService(svc)}
+                        hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                        className="w-7 h-7 rounded-full bg-blue-50 items-center justify-center mx-2"
+                      >
+                        <Ionicons name="information-circle-outline" size={17} color={BLUE} />
+                      </TouchableOpacity>
+                      {/* Expand toggle */}
+                      <TouchableOpacity
+                        onPress={() => toggleExpanded(svc.provider_service_id)}
+                        hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                      >
+                        <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={16} color="#9CA3AF" />
+                      </TouchableOpacity>
+                    </TouchableOpacity>
+                    {/* Expanded items */}
+                    {isExpanded && svc.service_list.length > 0 && (
+                      <View className="bg-gray-50 border-b border-gray-100">
+                        {svc.service_list.map((item, itemIdx) => {
+                          const isItemSelected = svcItems.some((s) => s.label === item.label);
+                          return (
+                            <TouchableOpacity
+                              key={itemIdx}
+                              onPress={() => toggleItem(svc.provider_service_id, item)}
+                              activeOpacity={0.75}
+                              className={`flex-row items-center py-2.5 px-3.5 ml-10 border-b border-gray-100/80 ${
+                                isItemSelected ? 'bg-orange-50' : ''
+                              }`}
+                            >
+                              <View
+                                className={`w-[18px] h-[18px] rounded-[5px] border-2 items-center justify-center mr-3 shrink-0 ${
+                                  isItemSelected ? 'bg-tertiary-500 border-tertiary-500' : 'bg-white border-gray-300'
+                                }`}
+                              >
+                                {isItemSelected && <Ionicons name="checkmark" size={11} color="#fff" />}
+                              </View>
+                              <View className="flex-1">
+                                <Text className={`text-[12px] font-medium ${isItemSelected ? 'text-gray-900' : 'text-gray-600'}`}>
+                                  {item.label}
+                                </Text>
+                                {item.amount !== undefined && (
+                                  <Text className="text-[11px] text-tertiary-500 font-semibold mt-0.5">
+                                    {item.currency ?? 'UGX'} {item.amount.toLocaleString()}
+                                  </Text>
+                                )}
+                              </View>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    )}
+                  </View>
                 );
               })}
             </View>
@@ -922,18 +1167,39 @@ export default function ProviderRequestScreen() {
       )}
 
       {/* ── Map Picker Modal ──────────────────────────────────────────────── */}
-      <MapPickerModal
-        visible={showMapPicker}
-        initialLat={latitude || 0.3155}
-        initialLng={longitude || 32.5822}
-        onConfirm={(lat, lng) => {
-          setLatitude(lat);
-          setLongitude(lng);
-          setLocationSet(true);
-          setShowMapPicker(false);
-        }}
-        onCancel={() => setShowMapPicker(false)}
-      />
+      {showMapPicker && (
+        <MapPickerModal
+          initialLat={latitude || 0.3155}
+          initialLng={longitude || 32.5822}
+          onConfirm={(lat, lng) => {
+            setLatitude(lat);
+            setLongitude(lng);
+            setLocationSet(true);
+            setShowMapPicker(false);
+          }}
+          onCancel={() => setShowMapPicker(false)}
+        />
+      )}
+
+      {/* Service Detail Modal */}
+      {detailService && (
+        <ServiceDetailModal
+          service={detailService}
+          selectedItems={selectedItems[detailService.provider_service_id] ?? []}
+          onToggleItem={(item) => toggleItem(detailService.provider_service_id, item)}
+          onClose={() => setDetailService(null)}
+          onOpenImage={(images, index) => setImageViewer({ images, index })}
+        />
+      )}
+
+      {/* Full-screen Image Viewer */}
+      {imageViewer && (
+        <ImageViewerModal
+          images={imageViewer.images}
+          initialIndex={imageViewer.index}
+          onClose={() => setImageViewer(null)}
+        />
+      )}
     </SafeAreaView>
   );
 }

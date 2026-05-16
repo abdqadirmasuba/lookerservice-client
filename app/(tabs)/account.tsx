@@ -1,30 +1,13 @@
 import { View, Text, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { useAppSelector, useAppDispatch } from '../../src/store/hooks';
-import { logout } from '../../src/store/slices/authSlice';
-import { clearUser } from '../../src/store/slices/userSlice';
-import { clearAllStorage } from '../../src/utils/storage';
-import { showLogoutConfirm } from '../../src/utils/alerts';
+import { useAppSelector } from '../../src/store/hooks';
 import { getInitials } from '../../src/utils/formatters';
-import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
 export default function AccountScreen() {
   const router = useRouter();
-  const dispatch = useAppDispatch();
   const user = useAppSelector((state) => state.user.user);
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
-  
-  const handleLogout = () => {
-    showLogoutConfirm(async () => {
-      await clearAllStorage();  
-      dispatch(logout());
-      dispatch(clearUser());
-      await GoogleSignin.signOut();
-      
-      router.replace('/(tabs)/home');
-    });
-  };
 
   const menuSections = [
     {
@@ -44,7 +27,6 @@ export default function AccountScreen() {
       title: 'Support',
       items: [
         { label: 'Help & Support', route: '/(account)/help', icon: '❓' },
-        { label: 'Terms & Privacy', route: '/(account)/terms', icon: '📄' },
       ],
     },
     {
@@ -139,16 +121,6 @@ export default function AccountScreen() {
             ))}
           </View>
         ))}
-
-        {/* Logout Button */}
-        <View className="px-6 pt-4 pb-2">
-          <TouchableOpacity
-            onPress={handleLogout}
-            className="bg-red-50 py-4 rounded-xl items-center border border-red-200"
-          >
-            <Text className="text-red-600 font-semibold text-base">Logout</Text>
-          </TouchableOpacity>
-        </View>
 
         {/* App Version */}
         <View className="items-center pb-8">

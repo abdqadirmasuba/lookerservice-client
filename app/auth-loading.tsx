@@ -8,10 +8,12 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
+import { Platform } from 'react-native';
+import * as Device from 'expo-device';
 import { useAppDispatch } from '../src/store/hooks';
-import { loginSuccess, loginFailure, logout, setPublicId } from '../src/store/slices/authSlice';
+import { loginSuccess, loginFailure, logout, setInstallationId } from '../src/store/slices/authSlice';
 import { setUser } from '../src/store/slices/userSlice';
-import { hasCompletedOnboarding, getRefreshToken, saveRefreshToken, removeRefreshToken, getOrCreateDevicePublicId } from '../src/utils/storage';
+import { hasCompletedOnboarding, getRefreshToken, saveRefreshToken, removeRefreshToken, getInstallationId, saveInstallationId } from '../src/utils/storage';
 import { registerDevicePushToken } from '../src/utils/notifications';
 import { config } from '@/src/utils/apiConfig';
 
@@ -32,9 +34,34 @@ export default function AuthLoading() {
   }, []);
 
   const checkAuthStatus = async () => {
-    // Load (or generate on first run) the permanent device public ID
-    const devicePublicId = await getOrCreateDevicePublicId();
-    dispatch(setPublicId(devicePublicId));
+    // Load (or register) the backend installation ID
+    let installationId = await getInstallationId();
+    if (!installationId) {
+      try {
+        const deviceType = Platform.OS === 'ios' ? 'ios' : 'android';
+        const installRes = await fetch(`${API_BASE_URL}/installations`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            device_type: deviceType,
+            user_role: 'client',
+            device_name: Device.deviceName ?? 'Unknown',
+          }),
+        });
+        if (installRes.ok) {
+          const installData = await installRes.json();
+          if (installData?.data?.installation_id) {
+            installationId = installData.data.installation_id as string;
+            await saveInstallationId(installationId);
+          }
+        }
+      } catch {
+        // Non-critical — continue without installation ID
+      }
+    }
+    if (installationId) {
+      dispatch(setInstallationId(installationId));
+    }
 
     try {
       const onboardingComplete = await hasCompletedOnboarding();

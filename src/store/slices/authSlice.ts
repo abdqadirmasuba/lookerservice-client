@@ -3,7 +3,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 interface AuthState {
   isAuthenticated: boolean;
   token: string | null;
-  publicId: string | null;
+  installationId: string | null;
   isLoading: boolean;
   error: string | null;
 }
@@ -11,7 +11,7 @@ interface AuthState {
 const initialState: AuthState = {
   isAuthenticated: false,
   token: null,
-  publicId: null,
+  installationId: null,
   isLoading: false,
   error: null,
 };
@@ -49,8 +49,8 @@ const authSlice = createSlice({
     setAuthError(state, action: PayloadAction<string | null>) {
       state.error = action.payload;
     },
-    setPublicId(state, action: PayloadAction<string>) {
-      state.publicId = action.payload;
+    setInstallationId(state, action: PayloadAction<string>) {
+      state.installationId = action.payload;
     },
   },
 });
@@ -63,7 +63,7 @@ export const {
   updateToken,
   setAuthLoading,
   setAuthError,
-  setPublicId,
+  setInstallationId,
 } = authSlice.actions;
 
 export default authSlice.reducer;

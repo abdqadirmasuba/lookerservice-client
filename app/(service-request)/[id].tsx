@@ -12,10 +12,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useAppDispatch } from '@/src/store/hooks';
 import { setSelectedRequest, updateRequest } from '@/src/store/slices/requestsSlice';
 import { apiRequests } from '@/src/utils/apiRequests';
 import { formatCurrency, formatDateTime, formatRelativeTime } from '@/src/utils/formatters';
+import SvgIcon from '@/src/componets/common/SvgIcon';
 import type { ServiceRequest } from '@/src/types';
 
 export default function ServiceRequestDetailScreen() {
@@ -129,12 +131,6 @@ export default function ServiceRequestDetailScreen() {
     }
   };
 
-  const getRequestTypeInfo = (type: string) => {
-    return type === 'direct' 
-      ? { icon: '👤', label: 'Direct Request', color: 'text-purple-600 dark:text-purple-400' }
-      : { icon: '📢', label: 'Open Request', color: 'text-blue-600 dark:text-blue-400' };
-  };
-
   if (isLoading) {
     return (
       <SafeAreaView className="flex-1 bg-white dark:bg-[#0F172A]" edges={['top']}>
@@ -173,290 +169,285 @@ export default function ServiceRequestDetailScreen() {
   }
 
   const statusColor = getStatusColor(request.status);
-  const typeInfo = getRequestTypeInfo(request.request_type);
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-[#0F172A]" edges={['top']}>
       <StatusBar style="auto" />
       
       {/* Header */}
-      <View className="px-5 pt-3 pb-3 bg-white dark:bg-[#1E293B] border-b border-gray-200 dark:border-[#334155]">
+      <View className="px-5 pt-3 pb-3 bg-white border-b border-gray-200">
         <View className="flex-row items-center justify-between">
           <TouchableOpacity
             onPress={() => router.back()}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            className="w-9 h-9 rounded-full bg-gray-100 items-center justify-center"
           >
-            <Text className="text-primary-600 dark:text-primary-300 text-3xl font-light">‹</Text>
+            <Ionicons name="arrow-back" size={20} color="#1F2937" />
           </TouchableOpacity>
-          <View className="flex-1 mx-4">
-            <Text className="text-lg font-bold text-gray-900 dark:text-white text-center">
-              Request Details
-            </Text>
-          </View>
-          <View className="w-8" />
+          <Text className="text-lg font-bold text-gray-900">Request Details</Text>
+          <View className="w-9" />
         </View>
       </View>
 
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        <View className="px-5 py-6">
-          {/* Header Card */}
-          <View className="bg-white dark:bg-[#1E293B] rounded-xl p-5 mb-4 border border-gray-200 dark:border-[#334155]">
-            <View className="flex-row items-center justify-between mb-3">
-              <View className="flex-row items-center">
-                <Text className="text-2xl mr-2">{typeInfo.icon}</Text>
+        <View className="px-4 py-5 gap-3">
+
+          {/* ── 1. Header card: number / type / status ── */}
+          <View className="bg-white rounded-2xl p-4 border border-gray-100">
+            <View className="flex-row items-center justify-between mb-2">
+              <View className="flex-row items-center gap-2">
+                <View className="w-8 h-8 rounded-full bg-gray-100 items-center justify-center">
+                  <Ionicons
+                    name={request.request_type === 'direct' ? 'person-outline' : 'megaphone-outline'}
+                    size={15}
+                    color="#6B7280"
+                  />
+                </View>
                 <View>
-                  <Text className={`text-sm font-semibold ${typeInfo.color}`}>
-                    {typeInfo.label}
+                  <Text className="text-xs font-semibold text-gray-500">
+                    {request.request_type === 'direct' ? 'Direct Request' : 'Open Request'}
                   </Text>
-                  <Text className="text-xs text-gray-500 dark:text-gray-400 font-mono mt-1">
-                    {request.request_number}
-                  </Text>
+                  <Text className="text-[11px] text-gray-400 font-mono">{request.request_number}</Text>
                 </View>
               </View>
               <View className={`px-3 py-1 rounded-full ${statusColor.bg}`}>
-                <Text className={`text-xs font-semibold ${statusColor.text}`}>
+                <Text className={`text-xs font-bold ${statusColor.text}`}>
                   {request.status.replace('_', ' ').toUpperCase()}
                 </Text>
               </View>
             </View>
-
-            <Text className="text-xs text-gray-400 dark:text-gray-500">
-              Created {formatRelativeTime(request.created_at)}
+            {request.provider_response && request.provider_response !== 'pending' && (
+              <View className="mt-2 flex-row items-center gap-1.5">
+                <Ionicons
+                  name={request.provider_response === 'accepted' ? 'checkmark-circle' : 'close-circle'}
+                  size={14}
+                  color={request.provider_response === 'accepted' ? '#16A34A' : '#DC2626'}
+                />
+                <Text className={`text-xs font-semibold ${request.provider_response === 'accepted' ? 'text-green-700' : 'text-red-600'}`}>
+                  Provider {request.provider_response}
+                </Text>
+              </View>
+            )}
+            <Text className="text-[11px] text-gray-400 mt-2">
+              Sent {formatRelativeTime(request.created_at)}
             </Text>
           </View>
 
-          {/* Rejection Reason */}
+          {/* ── 2. Rejection reason ── */}
           {request.status === 'rejected' && request.rejection_reason && (
-            <View className="bg-red-50 dark:bg-red-900/20 rounded-xl p-5 mb-4 border border-red-200 dark:border-red-700">
-              <View className="flex-row items-center mb-2">
-                <Text className="text-lg mr-2">⛔</Text>
-                <Text className="text-base font-bold text-red-800 dark:text-red-200">Request Rejected</Text>
+            <View className="bg-red-50 rounded-2xl p-4 border border-red-200">
+              <View className="flex-row items-center gap-2 mb-2">
+                <Ionicons name="ban-outline" size={16} color="#DC2626" />
+                <Text className="text-sm font-bold text-red-800">Request Rejected</Text>
               </View>
-              <Text className="text-sm text-red-700 dark:text-red-300 leading-5">
-                {request.rejection_reason}
-              </Text>
+              <Text className="text-sm text-red-700 leading-5">{request.rejection_reason}</Text>
             </View>
           )}
 
-          {/* Business Info (for responded/direct) */}
+          {/* ── 3. Provider card ── */}
           {request.business_name && (
-            <View className="bg-white dark:bg-[#1E293B] rounded-xl p-5 mb-4 border border-gray-200 dark:border-[#334155]">
-              <Text className="text-sm text-gray-500 dark:text-gray-400 mb-2">Provider</Text>
+            <View className="bg-white rounded-2xl p-4 border border-gray-100">
+              <Text className="text-[11px] font-bold text-gray-400 uppercase tracking-wide mb-3">Provider</Text>
               <View className="flex-row items-center">
                 {request.business_logo ? (
                   <Image
                     source={{ uri: request.business_logo }}
-                    style={{ width: 44, height: 44, borderRadius: 22, marginRight: 12 }}
+                    style={{ width: 52, height: 52, borderRadius: 14, marginRight: 12 }}
                     resizeMode="cover"
                   />
                 ) : (
                   <View
                     style={{
-                      width: 44, height: 44, borderRadius: 22, marginRight: 12,
-                      backgroundColor: '#2DA9E9', alignItems: 'center', justifyContent: 'center',
+                      width: 52, height: 52, borderRadius: 14, marginRight: 12,
+                      backgroundColor: '#FFF3E0', alignItems: 'center', justifyContent: 'center',
                     }}
                   >
-                    <Text style={{ color: '#fff', fontWeight: '700', fontSize: 16 }}>
+                    <Text style={{ color: '#F57C1F', fontWeight: '800', fontSize: 18 }}>
                       {request.business_name.charAt(0).toUpperCase()}
                     </Text>
                   </View>
                 )}
-                <Text className="text-base font-semibold text-gray-900 dark:text-white">
+                <Text className="text-base font-bold text-gray-900 flex-1" numberOfLines={2}>
                   {request.business_name}
                 </Text>
               </View>
             </View>
           )}
 
-          {/* Description */}
-          <View className="bg-white dark:bg-[#1E293B] rounded-xl p-5 mb-4 border border-gray-200 dark:border-[#334155]">
-            <Text className="text-lg font-bold text-gray-900 dark:text-white mb-3">
-              Description
-            </Text>
-            {isEditing ? (
-              <TextInput
-                value={editDescription}
-                onChangeText={setEditDescription}
-                multiline
-                numberOfLines={5}
-                className="text-base text-gray-700 dark:text-gray-300 leading-6 border border-gray-300 dark:border-[#475569] rounded-lg p-3"
-                style={{ minHeight: 100, textAlignVertical: 'top' }}
-              />
-            ) : (
-              <Text className="text-base text-gray-700 dark:text-gray-300 leading-6">
-                {request.description}
-              </Text>
-            )}
-          </View>
-
-          {/* Services */}
-          <View className="bg-white dark:bg-[#1E293B] rounded-xl p-5 mb-4 border border-gray-200 dark:border-[#334155]">
-            <Text className="text-lg font-bold text-gray-900 dark:text-white mb-3">
-              Services Requested
-            </Text>
-            {request.services && request.services.length > 0 ? (
-              request.services.map((service, index) => (
+          {/* ── 4. Services ── */}
+          {request.services && request.services.length > 0 && (
+            <View className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+              <View className="px-4 pt-4 pb-2">
+                <Text className="text-[11px] font-bold text-gray-400 uppercase tracking-wide">
+                  Services Requested
+                </Text>
+              </View>
+              {request.services.map((svc, idx) => (
                 <View
-                  key={service.id}
-                  className={`py-3 ${
-                    index < request.services!.length - 1
-                      ? 'border-b border-gray-100 dark:border-[#334155]'
-                      : ''
-                  }`}
+                  key={svc.id}
+                  className={`px-4 py-3 ${idx < request.services!.length - 1 ? 'border-b border-gray-50' : ''}`}
                 >
-                  <Text className="text-base font-semibold text-gray-900 dark:text-white mb-1">
-                    {service.service_name}
-                  </Text>
-                  {service.category_name && (
-                    <Text className="text-xs text-gray-500 dark:text-gray-400">
-                      {service.category_name}
-                    </Text>
+                  {/* Service header */}
+                  <View className="flex-row items-center gap-3 mb-1.5">
+                    <View className="w-9 h-9 rounded-[10px] bg-orange-50 items-center justify-center shrink-0">
+                      <SvgIcon uri={svc.service_icon ?? svc.service_icon_url ?? ''} size={20} fallback="⚙️" />
+                    </View>
+                    <View className="flex-1">
+                      <Text className="text-[13px] font-bold text-gray-900" numberOfLines={1}>
+                        {svc.service_name}
+                      </Text>
+                      {svc.category_name && (
+                        <Text className="text-[11px] text-gray-400 mt-0.5">{svc.category_name}</Text>
+                      )}
+                    </View>
+                  </View>
+                  {/* Items */}
+                  {svc.items && svc.items.length > 0 && (
+                    <View className="ml-12 gap-1">
+                      {svc.items.map((item, iIdx) => (
+                        <View key={iIdx} className="flex-row items-center justify-between bg-gray-50 rounded-xl px-3 py-2">
+                          <Text className="text-[12px] text-gray-700 flex-1 mr-2" numberOfLines={1}>
+                            {item.label}
+                          </Text>
+                          {item.amount !== undefined && (
+                            <Text className="text-[12px] font-bold text-orange-500 shrink-0">
+                              {item.currency ?? 'UGX'} {item.amount.toLocaleString()}
+                            </Text>
+                          )}
+                        </View>
+                      ))}
+                    </View>
                   )}
                 </View>
-              ))
-            ) : request.service_names && request.service_names.length > 0 ? (
-              request.service_names.map((name, index) => (
-                <View
-                  key={index}
-                  className={`py-3 ${
-                    index < request.service_names!.length - 1
-                      ? 'border-b border-gray-100 dark:border-[#334155]'
-                      : ''
-                  }`}
-                >
-                  <Text className="text-base font-semibold text-gray-900 dark:text-white">
-                    {name}
-                  </Text>
-                </View>
-              ))
-            ) : (
-              <Text className="text-sm text-gray-400 dark:text-gray-500">No services listed</Text>
-            )}
-          </View>
-
-          {/* Budget & Schedule */}
-          <View className="bg-white dark:bg-[#1E293B] rounded-xl p-5 mb-4 border border-gray-200 dark:border-[#334155]">
-            <Text className="text-lg font-bold text-gray-900 dark:text-white mb-3">
-              Budget & Schedule
-            </Text>
-            
-            <View className="space-y-3">
-              <View className="flex-row items-start">
-                <Text className="text-gray-600 dark:text-gray-400 text-sm w-32">Budget:</Text>
-                <Text className="flex-1 text-gray-900 dark:text-white text-base font-medium">
-                  {request.budget_min && request.budget_max
-                    ? `${formatCurrency(request.budget_min)} - ${formatCurrency(request.budget_max)}`
-                    : request.budget_min
-                    ? `From ${formatCurrency(request.budget_min)}`
-                    : request.budget_max
-                    ? `Up to ${formatCurrency(request.budget_max)}`
-                    : 'Negotiable'}
-                </Text>
-              </View>
-              
-              <View className="flex-row items-start">
-                <Text className="text-gray-600 dark:text-gray-400 text-sm w-32">Preferred Date:</Text>
-                <Text className="flex-1 text-gray-900 dark:text-white text-base font-medium">
-                  {request.preferred_date ? formatDateTime(request.preferred_date) : 'Not specified'}
-                </Text>
-              </View>
-
-              {request.deadline && (
-                <View className="flex-row items-start">
-                  <Text className="text-gray-600 dark:text-gray-400 text-sm w-32">Deadline:</Text>
-                  <Text className="flex-1 text-gray-900 dark:text-white text-base font-medium">
-                    {formatDateTime(request.deadline)}
-                  </Text>
-                </View>
-              )}
-            </View>
-          </View>
-
-          {/* Location */}
-          <View className="bg-white dark:bg-[#1E293B] rounded-xl p-5 mb-4 border border-gray-200 dark:border-[#334155]">
-            <Text className="text-lg font-bold text-gray-900 dark:text-white mb-3">
-              Service Location
-            </Text>
-            
-            <View className="flex-row items-start">
-              <Text className="text-2xl mr-3">📍</Text>
-              <View className="flex-1">
-                <Text className="text-base text-gray-900 dark:text-white font-medium mb-1">
-                  {request.address}
-                </Text>
-                <Text className="text-sm text-gray-500 dark:text-gray-400">
-                  {request.city}
-                </Text>
-                {request.location && (
-                  <Text className="text-xs text-gray-400 dark:text-gray-500 mt-2">
-                    {request.location.latitude.toFixed(6)}, {request.location.longitude.toFixed(6)}
-                  </Text>
-                )}
-              </View>
-            </View>
-          </View>
-
-          {/* Images */}
-          {request.images && request.images.length > 0 && (
-            <View className="bg-white dark:bg-[#1E293B] rounded-xl p-5 mb-4 border border-gray-200 dark:border-[#334155]">
-              <Text className="text-lg font-bold text-gray-900 dark:text-white mb-3">
-                Images
-              </Text>
-              <View className="flex-row flex-wrap gap-2">
-                {request.images.map((image, index) => (
-                  <Image
-                    key={index}
-                    source={{ uri: image }}
-                    className="w-24 h-24 rounded-lg"
-                    resizeMode="cover"
-                  />
-                ))}
-              </View>
+              ))}
             </View>
           )}
 
-          {/* Bids Info */}
+          {/* ── 5. Description (only if non-empty) ── */}
+          {!!request.description?.trim() && (
+            <View className="bg-white rounded-2xl p-4 border border-gray-100">
+              <Text className="text-[11px] font-bold text-gray-400 uppercase tracking-wide mb-2">Description</Text>
+              {isEditing ? (
+                <TextInput
+                  value={editDescription}
+                  onChangeText={setEditDescription}
+                  multiline
+                  numberOfLines={5}
+                  className="text-sm text-gray-700 leading-5 border border-gray-200 rounded-xl p-3"
+                  style={{ minHeight: 100, textAlignVertical: 'top' }}
+                />
+              ) : (
+                <Text className="text-sm text-gray-700 leading-5">{request.description}</Text>
+              )}
+            </View>
+          )}
+
+          {/* ── 6. Images (only if present) ── */}
+          {request.images && request.images.length > 0 && (
+            <View className="bg-white rounded-2xl p-4 border border-gray-100">
+              <Text className="text-[11px] font-bold text-gray-400 uppercase tracking-wide mb-3">Photos</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <View className="flex-row gap-2">
+                  {request.images.map((uri, idx) => (
+                    <Image
+                      key={idx}
+                      source={{ uri }}
+                      style={{ width: 88, height: 88, borderRadius: 12 }}
+                      resizeMode="cover"
+                    />
+                  ))}
+                </View>
+              </ScrollView>
+            </View>
+          )}
+
+          {/* ── 7. Budget (only if set) ── */}
+          {(request.budget_min != null || request.budget_max != null) && (
+            <View className="bg-white rounded-2xl p-4 border border-gray-100">
+              <View className="flex-row items-center gap-2 mb-1">
+                <Ionicons name="cash-outline" size={16} color="#16A34A" />
+                <Text className="text-[11px] font-bold text-gray-400 uppercase tracking-wide">Budget</Text>
+              </View>
+              <Text className="text-sm font-semibold text-gray-800 mt-1">
+                {request.budget_min != null && request.budget_max != null
+                  ? `${formatCurrency(request.budget_min)} – ${formatCurrency(request.budget_max)}`
+                  : request.budget_min != null
+                  ? `From ${formatCurrency(request.budget_min)}`
+                  : `Up to ${formatCurrency(request.budget_max!)}`}
+              </Text>
+            </View>
+          )}
+
+          {/* ── 8. Preferred date (only if set) ── */}
+          {request.preferred_date && (
+            <View className="bg-white rounded-2xl p-4 border border-gray-100">
+              <View className="flex-row items-center gap-2 mb-1">
+                <Ionicons name="calendar-outline" size={16} color="#2DA9E9" />
+                <Text className="text-[11px] font-bold text-gray-400 uppercase tracking-wide">Preferred Date</Text>
+              </View>
+              <Text className="text-sm font-semibold text-gray-800 mt-1">
+                {formatDateTime(request.preferred_date)}
+              </Text>
+            </View>
+          )}
+
+          {/* ── 9. Deadline (only if set) ── */}
+          {request.deadline && (
+            <View className="bg-white rounded-2xl p-4 border border-gray-100">
+              <View className="flex-row items-center gap-2 mb-1">
+                <Ionicons name="hourglass-outline" size={16} color="#DC2626" />
+                <Text className="text-[11px] font-bold text-gray-400 uppercase tracking-wide">Deadline</Text>
+              </View>
+              <Text className="text-sm font-semibold text-gray-800 mt-1">
+                {formatDateTime(request.deadline)}
+              </Text>
+            </View>
+          )}
+
+          {/* ── 10. Location (only if address or city is non-empty) ── */}
+          {(!!request.address?.trim() || !!request.city?.trim()) && (
+            <View className="bg-white rounded-2xl p-4 border border-gray-100">
+              <View className="flex-row items-center gap-2 mb-2">
+                <Ionicons name="location-outline" size={16} color="#F57C1F" />
+                <Text className="text-[11px] font-bold text-gray-400 uppercase tracking-wide">Location</Text>
+              </View>
+              {!!request.address?.trim() && (
+                <Text className="text-sm font-semibold text-gray-800">{request.address}</Text>
+              )}
+              {!!request.city?.trim() && (
+                <Text className="text-sm text-gray-500 mt-0.5">{request.city}</Text>
+              )}
+            </View>
+          )}
+
+          {/* ── 11. Bids info (open requests) ── */}
           {request.request_type === 'open' && (
-            <View className="bg-primary-50 dark:bg-primary-900/20 rounded-xl p-5 mb-4 border border-primary-200 dark:border-primary-700">
+            <View className="bg-blue-50 rounded-2xl p-4 border border-blue-100">
               <View className="flex-row items-center justify-between">
                 <View>
-                  <Text className="text-lg font-bold text-primary-900 dark:text-primary-100 mb-1">
-                    {request.bid_count} {request.bid_count === 1 ? 'Bid' : 'Bids'} Received
+                  <Text className="text-base font-bold text-blue-900 mb-0.5">
+                    {request.bid_count ?? 0} {(request.bid_count ?? 0) === 1 ? 'Bid' : 'Bids'} Received
                   </Text>
-                  <Text className="text-sm text-primary-700 dark:text-primary-300">
-                    {request.bid_count === 0
+                  <Text className="text-xs text-blue-600">
+                    {(request.bid_count ?? 0) === 0
                       ? 'Waiting for providers to submit bids'
                       : 'Review and accept the best bid'}
                   </Text>
                 </View>
-                {request.bid_count > 0 && (
+                {(request.bid_count ?? 0) > 0 && (
                   <TouchableOpacity
-                    onPress={() => {
-                      // TODO: Navigate to bids list
-                      Alert.alert('Coming Soon', 'Bids list feature coming soon!');
-                    }}
-                    className="bg-primary-500 px-4 py-2 rounded-lg"
+                    onPress={() => Alert.alert('Coming Soon', 'Bids list coming soon!')}
+                    className="bg-blue-500 px-4 py-2 rounded-xl"
                   >
-                    <Text className="text-white font-semibold text-sm">View Bids</Text>
+                    <Text className="text-white font-bold text-xs">View Bids</Text>
                   </TouchableOpacity>
                 )}
               </View>
             </View>
           )}
 
-          {request.request_type === 'direct' && request.target_provider_name && (
-            <View className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-5 mb-4 border border-purple-200 dark:border-purple-700">
-              <Text className="text-sm text-purple-700 dark:text-purple-300 mb-1">
-                Sent to
-              </Text>
-              <Text className="text-lg font-bold text-purple-900 dark:text-purple-100">
-                {request.target_provider_name}
-              </Text>
-            </View>
-          )}
         </View>
-
-        <View className="h-24" />
+        <View className="h-28" />
       </ScrollView>
 
       {/* Action Buttons */}

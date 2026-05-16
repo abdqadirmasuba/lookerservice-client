@@ -1,6 +1,13 @@
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useAppDispatch } from '../../src/store/hooks';
+import { logout } from '../../src/store/slices/authSlice';
+import { clearUser } from '../../src/store/slices/userSlice';
+import { clearAllStorage } from '../../src/utils/storage';
+import { showLogoutConfirm } from '../../src/utils/alerts';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import { apiRequests } from '../../src/utils/apiRequests';
 
 type MenuItem = {
   label: string;
@@ -18,12 +25,6 @@ const MENU_ITEMS: MenuItem[] = [
     icon: '🔑',
   },
   {
-    label: 'Notification Preferences',
-    sublabel: 'Manage push & email alerts',
-    route: '/(account)/notifications',
-    icon: '🔔',
-  },
-  {
     label: 'Delete Account',
     sublabel: 'Permanently remove your account',
     route: '/(account)/delete-account',
@@ -34,6 +35,22 @@ const MENU_ITEMS: MenuItem[] = [
 
 export default function AccountSettingsScreen() {
   const router = useRouter();
+  const dispatch = useAppDispatch();
+
+  const handleLogout = () => {
+    showLogoutConfirm(async () => {
+      try {
+        await apiRequests.post('/auth/logout');
+      } catch {
+        // Proceed with local logout even if the server call fails
+      }
+      await clearAllStorage();
+      dispatch(logout());
+      dispatch(clearUser());
+      await GoogleSignin.signOut();
+      router.replace('/(tabs)/home');
+    });
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50" edges={['bottom']}>
@@ -75,6 +92,17 @@ export default function AccountSettingsScreen() {
               <Text className={item.danger ? 'text-red-300' : 'text-gray-300'}>›</Text>
             </TouchableOpacity>
           ))}
+        </View>
+
+        {/* Logout */}
+        <View className="mx-4 mt-6">
+          <TouchableOpacity
+            onPress={handleLogout}
+            activeOpacity={0.8}
+            className="bg-red-50 py-4 rounded-2xl items-center border border-red-200"
+          >
+            <Text className="text-red-600 font-semibold text-base">Logout</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>

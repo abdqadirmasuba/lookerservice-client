@@ -5,7 +5,7 @@ export const STORAGE_KEYS = {
   USER_DATA: '@lookerservice_user_data',
   ONBOARDING_COMPLETE: '@lookerservice_onboarding_complete',
   REDUX_PERSIST: 'root',
-  DEVICE_PUBLIC_ID: '@lookerservice_device_public_id',
+  INSTALLATION_ID: '@lookerservice_installation_id',
 };
 
 // API Base URL - Update this with your actual API URL
@@ -70,10 +70,3 @@ export const TOKEN_REFRESH_THRESHOLD = 5 * 60 * 1000; // 5 minutes before expiry
 export const RESEND_OTP_DELAY = 60; // seconds
 export const RESEND_EMAIL_DELAY = 120; // seconds
 
-
-// Contact Info
-export const SUPPORT_EMAIL = 'support@lookerservice.com';
-export const SUPPORT_PHONE = '+256700000000';
-
-// App Version
-export const APP_VERSION = '1.0.0';

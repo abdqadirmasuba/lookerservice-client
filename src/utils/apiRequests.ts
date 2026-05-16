@@ -15,15 +15,15 @@ api.interceptors.request.use(
     const { store } = await import('../store');
     const state = store.getState();
     const authtoken = state.auth.token;
-    // const publicId = state.auth.publicId;
 
     if (authtoken) {
       config.headers.Authorization = `Bearer ${authtoken}`;
     }
 
-    // if (publicId) {
-    //   config.headers['X-Public-ID'] = publicId;
-    // }
+    const installationId = state.auth.installationId;
+    if (installationId) {
+      config.headers['X-Installation-ID'] = installationId;
+    }
 
     return config;
   },

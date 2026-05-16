@@ -77,6 +77,13 @@ export default function ServicesScreen() {
               Select the specific service you need
             </Text>
           </View>
+          <TouchableOpacity
+            onPress={() => router.replace('/(tabs)/home')}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            className="ml-3"
+          >
+            <Ionicons name="home-outline" size={24} color="#1F2937" />
+          </TouchableOpacity>
         </View>
       </View>
 
