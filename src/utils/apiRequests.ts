@@ -5,6 +5,7 @@ const api = axios.create({
   baseURL: config.domain_url,
   headers: {
     'Content-Type': 'application/json',
+    'X-Platform': 'client',
   },
 });
 
@@ -22,7 +23,7 @@ api.interceptors.request.use(
 
     const installationId = state.auth.installationId;
     if (installationId) {
-      config.headers['X-Installation-ID'] = installationId;
+      config.headers['X-Client-Installation-ID'] = installationId;
     }
 
     return config;

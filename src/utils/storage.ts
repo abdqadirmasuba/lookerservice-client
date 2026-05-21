@@ -94,20 +94,20 @@ export const clearAllStorage = async (): Promise<void> => {
 // A UUID returned by the backend /installations endpoint.
 // Persisted permanently and survives app restarts (but not clean reinstall).
 
-export const getInstallationId = async (): Promise<string | null> => {
+export const getClientInstallationId = async (): Promise<string | null> => {
   try {
-    return await AsyncStorage.getItem(STORAGE_KEYS.INSTALLATION_ID);
+    return await AsyncStorage.getItem(STORAGE_KEYS.CLIENT_INSTALLATION_ID);
   } catch (error) {
-    console.error('Error getting installation ID:', error);
+    console.error('Error getting client installation ID:', error);
     return null;
   }
 };
 
-export const saveInstallationId = async (id: string): Promise<void> => {
+export const saveClientInstallationId = async (id: string): Promise<void> => {
   try {
-    await AsyncStorage.setItem(STORAGE_KEYS.INSTALLATION_ID, id);
+    await AsyncStorage.setItem(STORAGE_KEYS.CLIENT_INSTALLATION_ID, id);
   } catch (error) {
-    console.error('Error saving installation ID:', error);
+    console.error('Error saving client installation ID:', error);
   }
 };
 

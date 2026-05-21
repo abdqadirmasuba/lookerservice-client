@@ -200,6 +200,7 @@ export default function LoginScreen() {
     const result = await signInWithGoogle(dispatch, (msg) => setServerError(msg));
     setIsGoogleLoading(false);
     if (result === 'success') {
+      void registerDevicePushToken();
       router.replace((returnTo as any) ?? '/(tabs)/home');
     }
   };

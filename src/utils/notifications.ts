@@ -2,7 +2,7 @@ import { Platform } from 'react-native';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
-import api from '../services/api';
+import { apiRequests } from './apiRequests';
 
 /**
  * Call once at app startup (module level) so the handler is registered before
@@ -73,8 +73,9 @@ export async function registerForPushNotificationsAsync(): Promise<string> {
 export async function registerDevicePushToken(): Promise<void> {
   try {
     const token = await registerForPushNotificationsAsync();
+    console.log('Push token obtained:', token);
 
-    await api.post('/notifications/device-token', { token });
+    await apiRequests.patch('/installations/push-tokens', { push_token: token });
   } catch {
     // Fail silently
   }
