@@ -5,7 +5,6 @@ export const STORAGE_KEYS = {
   USER_DATA: '@lookerservice_user_data',
   ONBOARDING_COMPLETE: '@lookerservice_onboarding_complete',
   REDUX_PERSIST: 'root',
-  CLIENT_INSTALLATION_ID: '@lookerservice_client_installation_id',
 };
 
 // API Base URL - Update this with your actual API URL

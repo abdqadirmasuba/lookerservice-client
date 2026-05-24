@@ -23,7 +23,6 @@ export interface Notification {
 }
 
 export interface NotificationSettings {
-  push: boolean;
   email: boolean;
   sms: boolean;
   categories: {

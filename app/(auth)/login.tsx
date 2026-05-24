@@ -21,7 +21,6 @@ import { validateEmail, validatePhone, validatePassword } from '../../src/utils/
 import { showRequiredFieldAlert } from '../../src/utils/alerts';
 import { apiRequests } from '@/src/utils/apiRequests';
 import { signInWithGoogle } from '../../src/utils/googleAuth';
-import { registerDevicePushToken } from '../../src/utils/notifications';
 import KeyboardAvoidingWrapper from '@/src/componets/common/KeyboardAvoidingWrapper';
 
 type TabType = 'email' | 'phone';
@@ -171,9 +170,6 @@ export default function LoginScreen() {
           lastLoginAt: user.last_login_at,
         }));
 
-        // Register push token (fire-and-forget, non-critical)
-        void registerDevicePushToken();
-
         // Navigate back to origin or home
         router.replace((returnTo as any) ?? '/(tabs)/home');
       } else {
@@ -200,7 +196,6 @@ export default function LoginScreen() {
     const result = await signInWithGoogle(dispatch, (msg) => setServerError(msg));
     setIsGoogleLoading(false);
     if (result === 'success') {
-      void registerDevicePushToken();
       router.replace((returnTo as any) ?? '/(tabs)/home');
     }
   };

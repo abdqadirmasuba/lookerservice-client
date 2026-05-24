@@ -90,27 +90,6 @@ export const clearAllStorage = async (): Promise<void> => {
   }
 };
 
-// ── Installation ID ───────────────────────────────────────────────────────────
-// A UUID returned by the backend /installations endpoint.
-// Persisted permanently and survives app restarts (but not clean reinstall).
-
-export const getClientInstallationId = async (): Promise<string | null> => {
-  try {
-    return await AsyncStorage.getItem(STORAGE_KEYS.CLIENT_INSTALLATION_ID);
-  } catch (error) {
-    console.error('Error getting client installation ID:', error);
-    return null;
-  }
-};
-
-export const saveClientInstallationId = async (id: string): Promise<void> => {
-  try {
-    await AsyncStorage.setItem(STORAGE_KEYS.CLIENT_INSTALLATION_ID, id);
-  } catch (error) {
-    console.error('Error saving client installation ID:', error);
-  }
-};
-
 // Save user data
 export const saveUserData = async (userData: unknown): Promise<void> => {
   try {

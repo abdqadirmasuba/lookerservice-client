@@ -9,7 +9,6 @@ export default function NotificationSettingsScreen() {
   const router = useRouter();
   const settings = useAppSelector((state) => state.notifications.settings);
   
-  const [pushEnabled, setPushEnabled] = useState(settings?.push ?? true);
   const [emailEnabled, setEmailEnabled] = useState(settings?.email ?? true);
   const [smsEnabled, setSmsEnabled] = useState(settings?.sms ?? false);
   
@@ -28,22 +27,6 @@ export default function NotificationSettingsScreen() {
             Notification Channels
           </Text>
           
-          <View className="flex-row items-center justify-between py-3 border-b border-gray-100">
-            <View className="flex-row items-center flex-1">
-              <Ionicons name="phone-portrait" size={20} color="#6B7280" />
-              <View className="ml-3">
-                <Text className="text-base text-gray-900">Push Notifications</Text>
-                <Text className="text-sm text-gray-600">Receive notifications on your device</Text>
-              </View>
-            </View>
-            <Switch
-              value={pushEnabled}
-              onValueChange={setPushEnabled}
-              trackColor={{ false: '#D1D5DB', true: '#93C5FD' }}
-              thumbColor={pushEnabled ? '#2563EB' : '#F3F4F6'}
-            />
-          </View>
-
           <View className="flex-row items-center justify-between py-3 border-b border-gray-100">
             <View className="flex-row items-center flex-1">
               <Ionicons name="mail" size={20} color="#6B7280" />

@@ -8,13 +8,10 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import { Platform } from 'react-native';
-import * as Device from 'expo-device';
 import { useAppDispatch } from '../src/store/hooks';
-import { loginSuccess, loginFailure, logout, setInstallationId } from '../src/store/slices/authSlice';
+import { loginSuccess, loginFailure, logout } from '../src/store/slices/authSlice';
 import { setUser } from '../src/store/slices/userSlice';
-import { hasCompletedOnboarding, getRefreshToken, saveRefreshToken, removeRefreshToken, getClientInstallationId, saveClientInstallationId } from '../src/utils/storage';
-import { registerDevicePushToken } from '../src/utils/notifications';
+import { hasCompletedOnboarding, getRefreshToken, saveRefreshToken, removeRefreshToken } from '../src/utils/storage';
 import { config } from '@/src/utils/apiConfig';
 import { apiRequests } from '@/src/utils/apiRequests';
 
@@ -35,32 +32,6 @@ export default function AuthLoading() {
   }, []);
 
   const checkAuthStatus = async () => {
-    // Load (or register) the backend installation ID
-    let installationId = await getClientInstallationId();
-    console.log('Loaded installation ID:', installationId);
-    if (!installationId) {
-      try {
-        const deviceType = Platform.OS === 'ios' ? 'ios' : 'android';
-        const installRes = await apiRequests.post('/installations', {
-          device_type: deviceType,
-          user_role: 'client',
-          device_name: Device.deviceName
-        });
-
-        console.log('Installation registration response:', installRes.data.data);
-
-        installationId = installRes.data.data.installation_id
-        await saveClientInstallationId(installationId || '');
-        dispatch(setInstallationId(installationId || ''));
-
-      } catch {
-        // Non-critical — continue without installation ID
-      }
-    }
-    if (installationId) {
-      dispatch(setInstallationId(installationId));
-    }
-
 
     try {
       const onboardingComplete = await hasCompletedOnboarding();
@@ -133,10 +104,6 @@ export default function AuthLoading() {
         createdAt: user.created_at,
         lastLoginAt: user.last_login_at,
       }));
-
-      
-    // Register / refresh push token on every app load (fire-and-forget, non-critical)
-    void registerDevicePushToken();
 
       setTimeout(() => {
         router.replace('/(tabs)/home');

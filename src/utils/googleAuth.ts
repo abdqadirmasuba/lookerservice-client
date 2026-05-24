@@ -8,7 +8,6 @@ import type { Dispatch } from '@reduxjs/toolkit';
 import { loginStart, loginSuccess, loginFailure } from '../store/slices/authSlice';
 import { setUser } from '../store/slices/userSlice';
 import { saveRefreshToken } from './storage';
-import { registerDevicePushToken } from './notifications';
 import { apiRequests } from './apiRequests';
 import { config } from './apiConfig';
 
@@ -52,9 +51,6 @@ export async function signInWithGoogle(
                 await saveRefreshToken(res.data.refresh_token);
 
                 dispatch(loginSuccess({ accessToken: res.data.access_token }));
-
-                // Register push token (fire-and-forget, non-critical)
-                void registerDevicePushToken();
                 dispatch(
                     setUser({
                         id: userData.id,
