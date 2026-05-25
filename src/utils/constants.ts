@@ -3,6 +3,7 @@ export const STORAGE_KEYS = {
   ACCESS_TOKEN: '@lookerservice_access_token',
   REFRESH_TOKEN: '@lookerservice_refresh_token',
   USER_DATA: '@lookerservice_user_data',
+  INSTALLATION_ID: '@lookerservice_installation_id',
   ONBOARDING_COMPLETE: '@lookerservice_onboarding_complete',
   REDUX_PERSIST: 'root',
 };

@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { config } from './apiConfig';
+import { getInstallationId } from './storage';
 
 const api = axios.create({
   baseURL: config.domain_url,
@@ -16,9 +17,14 @@ api.interceptors.request.use(
     const { store } = await import('../store');
     const state = store.getState();
     const authtoken = state.auth.token;
+    const installationId = state.installation?.installationId || (await getInstallationId());
 
     if (authtoken) {
       config.headers.Authorization = `Bearer ${authtoken}`;
+    }
+
+    if (installationId) {
+      (config.headers as any)['X-Installation-ID'] = installationId;
     }
 
     return config;

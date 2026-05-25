@@ -1,6 +1,7 @@
 import { combineReducers } from '@reduxjs/toolkit';
 import authReducer from './slices/authSlice';
 import userReducer from './slices/userSlice';
+import installationReducer from './slices/installationSlice';
 import searchReducer from './slices/searchSlice';
 import providersReducer from './slices/providersSlice';
 import categoriesReducer from './slices/categoriesSlice';
@@ -15,6 +16,7 @@ import dashboardReducer from './slices/dashboardSlice';
 const rootReducer = combineReducers({
   auth: authReducer,
   user: userReducer,
+  installation: installationReducer,
   search: searchReducer,
   providers: providersReducer,
   categories: categoriesReducer,

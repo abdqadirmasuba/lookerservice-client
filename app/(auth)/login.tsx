@@ -21,6 +21,7 @@ import { validateEmail, validatePhone, validatePassword } from '../../src/utils/
 import { showRequiredFieldAlert } from '../../src/utils/alerts';
 import { apiRequests } from '@/src/utils/apiRequests';
 import { signInWithGoogle } from '../../src/utils/googleAuth';
+import { ensureInstallationRegistered } from '../../src/utils/installation';
 import KeyboardAvoidingWrapper from '@/src/componets/common/KeyboardAvoidingWrapper';
 
 type TabType = 'email' | 'phone';
@@ -136,6 +137,12 @@ export default function LoginScreen() {
     dispatch(loginStart());
 
     try {
+      try {
+        await ensureInstallationRegistered('client');
+      } catch (setupError) {
+        console.warn('Installation registration at login failed:', setupError);
+      }
+
       const data = activeTab === 'email' ? { email, password } : { phone: phone.replace(/\D/g, ''), password };
       const response = await apiRequests.post('/auth/login', data);
       const res = response.data;

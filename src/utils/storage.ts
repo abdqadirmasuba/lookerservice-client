@@ -90,6 +90,34 @@ export const clearAllStorage = async (): Promise<void> => {
   }
 };
 
+// Save installation id
+export const saveInstallationId = async (installationId: string): Promise<void> => {
+  try {
+    await AsyncStorage.setItem(STORAGE_KEYS.INSTALLATION_ID, installationId);
+  } catch (error) {
+    console.error('Error saving installation ID:', error);
+  }
+};
+
+// Get installation id
+export const getInstallationId = async (): Promise<string | null> => {
+  try {
+    return await AsyncStorage.getItem(STORAGE_KEYS.INSTALLATION_ID);
+  } catch (error) {
+    console.error('Error getting installation ID:', error);
+    return null;
+  }
+};
+
+// Remove installation id
+export const removeInstallationId = async (): Promise<void> => {
+  try {
+    await AsyncStorage.removeItem(STORAGE_KEYS.INSTALLATION_ID);
+  } catch (error) {
+    console.error('Error removing installation ID:', error);
+  }
+};
+
 // Save user data
 export const saveUserData = async (userData: unknown): Promise<void> => {
   try {

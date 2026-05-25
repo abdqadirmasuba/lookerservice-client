@@ -12,6 +12,7 @@ import { useAppDispatch } from '../src/store/hooks';
 import { loginSuccess, loginFailure, logout } from '../src/store/slices/authSlice';
 import { setUser } from '../src/store/slices/userSlice';
 import { hasCompletedOnboarding, getRefreshToken, saveRefreshToken, removeRefreshToken } from '../src/utils/storage';
+import { ensureInstallationRegistered } from '../src/utils/installation';
 import { config } from '@/src/utils/apiConfig';
 import { apiRequests } from '@/src/utils/apiRequests';
 
@@ -32,6 +33,11 @@ export default function AuthLoading() {
   }, []);
 
   const checkAuthStatus = async () => {
+    try {
+      await ensureInstallationRegistered('client');
+    } catch (error) {
+      console.warn('Installation registration failed during app startup:', error);
+    }
 
     try {
       const onboardingComplete = await hasCompletedOnboarding();

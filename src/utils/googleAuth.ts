@@ -10,6 +10,7 @@ import { setUser } from '../store/slices/userSlice';
 import { saveRefreshToken } from './storage';
 import { apiRequests } from './apiRequests';
 import { config } from './apiConfig';
+import { ensureInstallationRegistered } from './installation';
 
 
 
@@ -35,7 +36,13 @@ export async function signInWithGoogle(
             const { idToken } = response.data;
 
             try {
-                const serverResponse = await apiRequests.post('/auth/client/google', {
+                try {
+              await ensureInstallationRegistered('client');
+            } catch (setupError) {
+              console.warn('Installation registration at Google auth failed:', setupError);
+            }
+
+            const serverResponse = await apiRequests.post('/auth/client/google', {
                     id_token: idToken,
                 });
                 const res = serverResponse.data;

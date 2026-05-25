@@ -7,7 +7,7 @@ import rootReducer from './rootReducer';
 const persistConfig = {
   key: 'root',
   storage: AsyncStorage,
-  whitelist: ['auth', 'user', 'search'], // Only persist these reducers
+  whitelist: ['auth', 'user', 'installation', 'search'], // Only persist these reducers
   blacklist: ['providers', 'categories', 'requests', 'bids', 'bookings', 'messages', 'payments', 'notifications'],
 };
 

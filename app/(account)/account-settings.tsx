@@ -40,7 +40,8 @@ export default function AccountSettingsScreen() {
   const handleLogout = () => {
     showLogoutConfirm(async () => {
       try {
-        await apiRequests.post('/auth/logout');
+        //  await api.post(`/installations/${installation_id}/logout`);
+        await apiRequests.post('/client/logout');
       } catch {
         // Proceed with local logout even if the server call fails
       }

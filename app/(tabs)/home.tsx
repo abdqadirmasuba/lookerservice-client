@@ -7,6 +7,7 @@ import { useAppSelector, useAppDispatch } from '../../src/store/hooks';
 import { setDashboardSummary, setDashboardLoading, setDashboardError } from '../../src/store/slices/dashboardSlice';
 import { setUnreadCount } from '../../src/store/slices/notificationsSlice';
 import { apiRequests } from '@/src/utils/apiRequests';
+import { registerDevicePushToken, setupNotificationHandler } from '../../src/utils/notifications';
 
 
 export default function HomeScreen() {
@@ -20,8 +21,12 @@ export default function HomeScreen() {
 
   useEffect(() => {
     if (isAuthenticated) {
+      setupNotificationHandler();
       loadDashboard();
       fetchUnreadCount();
+      registerDevicePushToken().catch((error) => {
+        console.warn('Could not register push token:', error);
+      });
     }
   }, [isAuthenticated]);
 
