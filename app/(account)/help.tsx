@@ -9,8 +9,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
-const SUPPORT_PHONE = '+256700000000';
-const SUPPORT_WHATSAPP = '+256700000000';
+const SUPPORT_PHONE = '+256771210855';
+const SUPPORT_WHATSAPP = '+256771210855';
 
 const FAQS = [
   {

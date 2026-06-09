@@ -8,6 +8,8 @@ export default function AccountLayout() {
       <Stack.Screen name="payment-methods" options={{ title: 'Payment Methods' }} />
       <Stack.Screen name="notifications" options={{ title: 'Notification Settings' }} />
       <Stack.Screen name="help" options={{ title: 'Help & Support' }} />
+      <Stack.Screen name="support-lookerservices" options={{ title: 'Support Looker Services' }} />
+      <Stack.Screen name="support-success" options={{ title: 'Payment Successful' }} />
       <Stack.Screen name="terms" options={{ title: 'Terms & Privacy' }} />
       <Stack.Screen
         name="delete-account"

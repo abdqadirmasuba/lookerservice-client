@@ -14,7 +14,7 @@ export default function AccountScreen() {
       title: 'Account',
       items: [
         { label: 'My Profile', route: '/(account)/profile', icon: '👤' },
-        { label: 'Saved Addresses', route: '/(account)/addresses', icon: '📍' },
+        // { label: 'Saved Addresses', route: '/(account)/addresses', icon: '📍' },
       ],
     },
     // {
@@ -27,6 +27,7 @@ export default function AccountScreen() {
       title: 'Support',
       items: [
         { label: 'Help & Support', route: '/(account)/help', icon: '❓' },
+        { label: 'Support Looker Services', route: '/(account)/support-lookerservices', icon: '💳' },
       ],
     },
     {
@@ -42,7 +43,7 @@ export default function AccountScreen() {
       <SafeAreaView className="flex-1 bg-white">
         <View className="px-6 py-8 bg-primary-50 items-center">
           <View className="w-24 h-24 rounded-full bg-primary-100 items-center justify-center mb-4">
-            <Text className="text-4xl">👤</Text>
+            <Text className="text-4xl">U</Text>
           </View>
           <Text className="text-2xl font-bold text-gray-900 mb-1">My Account</Text>
           <Text className="text-gray-500 text-sm">Sign in to access your account</Text>
@@ -113,10 +114,12 @@ export default function AccountScreen() {
                 className="flex-row items-center justify-between py-4 border-b border-gray-100"
               >
                 <View className="flex-row items-center">
-                  <Text className="text-2xl mr-4">{item.icon}</Text>
+                  <View className="w-8 mr-4 items-center">
+                    <Text className="text-sm font-bold text-gray-500">{item.icon}</Text>
+                  </View>
                   <Text className="text-base text-gray-900">{item.label}</Text>
                 </View>
-                <Text className="text-gray-400">›</Text>
+                <Text className="text-gray-400 text-xl">&gt;</Text>
               </TouchableOpacity>
             ))}
           </View>
