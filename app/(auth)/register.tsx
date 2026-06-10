@@ -241,6 +241,7 @@ export default function RegisterScreen() {
             ) : null}
 
             {/* Tab Toggle */}
+            {/*
             <View className="flex-row bg-gray-100 dark:bg-[#0F172A] rounded-full p-1 mb-6">
               <TouchableOpacity
                 onPress={() => {
@@ -278,6 +279,7 @@ export default function RegisterScreen() {
                 </Text>
               </TouchableOpacity>
             </View>
+            */}
 
             {/* Full Name Input */}
             <View className="mb-4">
@@ -289,7 +291,7 @@ export default function RegisterScreen() {
               } rounded-xl px-4`}>
                 <UserIcon size={20} color="#6B7280" />
                 <TextInput
-                  placeholder="Enter your full name"
+                  placeholder="Enter name"
                   placeholderTextColor="#6B7280"
                   value={fullName}
                   onChangeText={(text) => {
@@ -316,7 +318,7 @@ export default function RegisterScreen() {
                 } rounded-xl px-4`}>
                   <EnvelopeIcon size={20} color="#6B7280" />
                   <TextInput
-                    placeholder="your@email.com"
+                    placeholder="Enter email"
                     placeholderTextColor="#6B7280"
                     value={email}
                     onChangeText={(text) => {
@@ -336,6 +338,7 @@ export default function RegisterScreen() {
             )}
 
             {/* Phone Tab */}
+            {/*
             {activeTab === 'phone' && (
               <>
                 <View className="mb-4">
@@ -369,6 +372,7 @@ export default function RegisterScreen() {
 
               </>
             )}
+            */}
 
             {/* Password Input */}
             <View className="mb-4">

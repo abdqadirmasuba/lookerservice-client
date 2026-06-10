@@ -273,6 +273,7 @@ export default function LoginScreen() {
             ) : null}
 
             {/* Tab Toggle */}
+            {/*
             <View className="flex-row bg-gray-100 dark:bg-[#0F172A] rounded-full p-1 mb-6">
               <TouchableOpacity
                 onPress={() => {
@@ -312,6 +313,7 @@ export default function LoginScreen() {
                 </Text>
               </TouchableOpacity>
             </View>
+            */}
 
             {/* Email Tab */}
             {activeTab === 'email' && (
@@ -324,7 +326,7 @@ export default function LoginScreen() {
                 } rounded-xl px-4`}>
                   <EnvelopeIcon size={20} color="#6B7280" />
                   <TextInput
-                    placeholder="your@email.com"
+                    placeholder="Enter email"
                     placeholderTextColor="#6B7280"
                     value={email}
                     onChangeText={(text) => {
@@ -345,6 +347,7 @@ export default function LoginScreen() {
             )}
 
             {/* Phone Tab */}
+            {/*
             {activeTab === 'phone' && (
               <View className="mb-4">
                 <Text className="mb-2 font-medium text-gray-700 dark:text-gray-300">
@@ -375,6 +378,7 @@ export default function LoginScreen() {
                 ) : null}
               </View>
             )}
+            */}
 
             {/* Password Input */}
             <View className="mb-4">

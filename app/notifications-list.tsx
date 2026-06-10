@@ -227,7 +227,7 @@ export default function NotificationsListScreen() {
       </ScrollView>
 
       {/* Settings Link */}
-      <View className="bg-white border-t border-gray-200 px-6 py-4">
+      {/* <View className="bg-white border-t border-gray-200 px-6 py-4">
         <TouchableOpacity
           onPress={() => router.push('/(account)/notifications')}
           className="flex-row items-center justify-center"
@@ -235,7 +235,7 @@ export default function NotificationsListScreen() {
           <Ionicons name="settings-outline" size={20} color="#2563EB" />
           <Text className="text-primary-500 font-medium ml-2">Notification Settings</Text>
         </TouchableOpacity>
-      </View>
+      </View> */}
     </SafeAreaView>
   );
 }

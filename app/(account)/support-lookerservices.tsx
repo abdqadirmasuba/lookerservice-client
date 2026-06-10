@@ -20,13 +20,13 @@ const SUPPORT_PAYMENT_TEMPLATE = {
   description: 'Testing',
   notification_id: 'ea0f99fd-9cb4-481a-b70f-da4acafcef51',
   billing_address: {
-    email_address: 'john@doe.com',
+    email_address: '',
   },
 };
 
 export default function SupportLookerServicesScreen() {
-  const [amount, setAmount] = useState('1000');
-  const [phoneNumber, setPhoneNumber] = useState('0771210855');
+  const [amount, setAmount] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
