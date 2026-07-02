@@ -3,6 +3,7 @@ import { API_BASE_URL } from '../utils/constants';
 import { getRefreshToken, saveRefreshToken } from '../utils/storage';
 import { store } from '../store';
 import { updateToken, logout } from '../store/slices/authSlice';
+import { networkEvents } from '../utils/networkEvents';
 
 // Create axios instance
 const api: AxiosInstance = axios.create({
@@ -41,6 +42,12 @@ const onRefreshed = (token: string) => {
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
+    // No response means a connectivity failure — show the network error overlay
+    if (!error.response) {
+      networkEvents.emitNetworkError();
+      return Promise.reject(error);
+    }
+
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
     // If 401 and not already retrying

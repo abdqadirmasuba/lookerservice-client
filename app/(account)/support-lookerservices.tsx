@@ -33,7 +33,7 @@ export default function SupportLookerServicesScreen() {
   const callbackUrl = ExpoLinking.createURL('/support-success');
 
   useEffect(() => {
-    WebBrowser.warmUpAsync().catch(() => {});
+    WebBrowser.warmUpAsync().catch(() => { });
 
     const subscription = ExpoLinking.addEventListener('url', ({ url }) => {
       if (url.includes('/support-success')) {
@@ -43,7 +43,7 @@ export default function SupportLookerServicesScreen() {
 
     return () => {
       subscription.remove();
-      WebBrowser.coolDownAsync().catch(() => {});
+      WebBrowser.coolDownAsync().catch(() => { });
     };
   }, []);
 
@@ -110,18 +110,20 @@ export default function SupportLookerServicesScreen() {
       <KeyboardAvoidingWrapper>
         <View className="px-5 pt-5 pb-8">
           <View className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
-            <View
-              className="w-12 h-12 rounded-full items-center justify-center mb-4"
-              style={{ backgroundColor: '#EAF7FD' }}
-            >
-              <Ionicons name="heart" size={24} color="#2DA9E9" />
-            </View>
+            <View className="flex-row items-center justify-between mb-4">
+              <View
+                className="w-12 h-12 rounded-full items-center justify-center mb-4"
+                style={{ backgroundColor: '#EAF7FD' }}
+              >
+                <Ionicons name="heart" size={24} color="#2DA9E9" />
+              </View>
 
-            <Text className="text-2xl font-bold text-gray-900 mb-2">
-              Support Looker Services
+            </View>
+            <Text className="text-sm text-gray-500 leading-5 mb-6">
+              Give support to Looker Service to help its services grow and reach wider coverage. Your contribution Means alot in support for Looker Service platform to keep running .
             </Text>
             <Text className="text-sm text-gray-500 leading-5 mb-6">
-              Enter the amount and mobile money phone number to continue to Pesapal.
+              Payments are processed by Pesapal and support Mobile Money and card payments. Enter the amount and phone number below to create the payment.
             </Text>
 
             <View className="mb-4">
@@ -132,7 +134,7 @@ export default function SupportLookerServicesScreen() {
                   value={amount}
                   onChangeText={handleAmountChange}
                   keyboardType="number-pad"
-                  placeholder="1000"
+                  placeholder="amount "
                   placeholderTextColor="#9CA3AF"
                   className="flex-1 py-4 text-gray-900"
                 />
@@ -140,14 +142,14 @@ export default function SupportLookerServicesScreen() {
             </View>
 
             <View className="mb-5">
-              <Text className="text-sm font-semibold text-gray-700 mb-2">Phone Number</Text>
+              <Text className="text-sm font-semibold text-gray-700 mb-2">Mobile Account Number</Text>
               <View className="flex-row items-center bg-gray-50 border border-gray-200 rounded-xl px-4">
                 <Ionicons name="call-outline" size={20} color="#6B7280" />
                 <TextInput
                   value={phoneNumber}
                   onChangeText={handlePhoneChange}
                   keyboardType="phone-pad"
-                  placeholder="0771210855"
+                  placeholder="07XXXXXXXX"
                   placeholderTextColor="#9CA3AF"
                   className="flex-1 py-4 ml-3 text-gray-900"
                 />

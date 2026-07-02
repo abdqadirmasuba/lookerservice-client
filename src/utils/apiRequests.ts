@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { config } from './apiConfig';
 import { getInstallationId } from './storage';
+import { networkEvents } from './networkEvents';
 
 const api = axios.create({
   baseURL: config.domain_url,
@@ -30,6 +31,17 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Detect connectivity failures (no response = network issue, not a server error)
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (!error.response) {
+      networkEvents.emitNetworkError();
+    }
     return Promise.reject(error);
   }
 );

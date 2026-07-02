@@ -1,7 +1,29 @@
-import React from 'react';
-import { Modal, View, Text, TouchableOpacity, Dimensions } from 'react-native';
-import { WebView } from 'react-native-webview';
+import React, { useMemo, useState } from 'react';
+import {
+  ActivityIndicator,
+  Modal,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import MapView, { Marker, Region } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+const BLUE = '#2DA9E9';
+const ORANGE = '#F57C1F';
+const DEFAULT_LATITUDE_DELTA = 0.04;
+const DEFAULT_LONGITUDE_DELTA = 0.04;
+
+interface ProviderMapPin {
+  id?: string;
+  latitude: number;
+  longitude: number;
+  title: string;
+  address?: string;
+}
 
 interface LocationMapModalProps {
   visible: boolean;
@@ -10,6 +32,52 @@ interface LocationMapModalProps {
   longitude: number;
   title: string;
   address?: string;
+  pins?: ProviderMapPin[];
+}
+
+function toValidCoordinate(latitude: number, longitude: number) {
+  const lat = Number(latitude);
+  const lng = Number(longitude);
+
+  if (
+    !Number.isFinite(lat) ||
+    !Number.isFinite(lng) ||
+    lat < -90 ||
+    lat > 90 ||
+    lng < -180 ||
+    lng > 180
+  ) {
+    return null;
+  }
+
+  return { latitude: lat, longitude: lng };
+}
+
+function getRegion(markers: ProviderMapPin[]): Region {
+  if (markers.length === 1) {
+    return {
+      latitude: markers[0].latitude,
+      longitude: markers[0].longitude,
+      latitudeDelta: DEFAULT_LATITUDE_DELTA,
+      longitudeDelta: DEFAULT_LONGITUDE_DELTA,
+    };
+  }
+
+  const latitudes = markers.map((marker) => marker.latitude);
+  const longitudes = markers.map((marker) => marker.longitude);
+  const minLatitude = Math.min(...latitudes);
+  const maxLatitude = Math.max(...latitudes);
+  const minLongitude = Math.min(...longitudes);
+  const maxLongitude = Math.max(...longitudes);
+  const latitudeDelta = Math.max((maxLatitude - minLatitude) * 1.6, DEFAULT_LATITUDE_DELTA);
+  const longitudeDelta = Math.max((maxLongitude - minLongitude) * 1.6, DEFAULT_LONGITUDE_DELTA);
+
+  return {
+    latitude: (minLatitude + maxLatitude) / 2,
+    longitude: (minLongitude + maxLongitude) / 2,
+    latitudeDelta,
+    longitudeDelta,
+  };
 }
 
 export default function LocationMapModal({
@@ -18,131 +86,214 @@ export default function LocationMapModal({
   latitude,
   longitude,
   title,
-  address
+  address,
+  pins,
 }: LocationMapModalProps) {
-  
-  // Generate HTML for Leaflet map with OpenStreetMap
-  const generateMapHTML = () => {
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-        <style>
-          body { 
-            margin: 0; 
-            padding: 0; 
-          }
-          #map { 
-            width: 100vw; 
-            height: 100vh; 
-          }
-          .custom-popup {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-          }
-          .custom-popup h3 {
-            margin: 0 0 8px 0;
-            color: #2DA9E9;
-            font-size: 16px;
-            font-weight: 600;
-          }
-          .custom-popup p {
-            margin: 0;
-            color: #64748b;
-            font-size: 14px;
-          }
-        </style>
-      </head>
-      <body>
-        <div id="map"></div>
-        <script>
-          // Initialize map
-          var map = L.map('map', {
-            zoomControl: true,
-            attributionControl: true
-          }).setView([${latitude}, ${longitude}], 15);
+  const [isMapReady, setIsMapReady] = useState(false);
 
-          // Add OpenStreetMap tile layer
-          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-            maxZoom: 19,
-          }).addTo(map);
+  const markers = useMemo(() => {
+    const sourcePins =
+      pins && pins.length > 0
+        ? pins
+        : [{ latitude, longitude, title, address }];
 
-          // Custom marker icon
-          var customIcon = L.divIcon({
-            className: 'custom-marker',
-            html: '<div style="background: #2DA9E9; width: 32px; height: 32px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 3px solid white; box-shadow: 0 3px 10px rgba(0,0,0,0.3);"><div style="width: 10px; height: 10px; background: white; border-radius: 50%; margin: 8px auto; transform: rotate(45deg);"></div></div>',
-            iconSize: [32, 32],
-            iconAnchor: [16, 32],
-            popupAnchor: [0, -32]
-          });
+    return sourcePins
+      .map((pin, index) => {
+        const coordinate = toValidCoordinate(pin.latitude, pin.longitude);
+        if (!coordinate) return null;
 
-          // Add marker
-          var marker = L.marker([${latitude}, ${longitude}], { icon: customIcon }).addTo(map);
-          
-          // Add popup
-          var popupContent = '<div class="custom-popup"><h3>${title.replace(/'/g, "\\'")}</h3>${address ? `<p>${address.replace(/'/g, "\\'")}</p>` : ''}</div>';
-          marker.bindPopup(popupContent).openPopup();
+        return {
+          ...pin,
+          id: pin.id ?? `${coordinate.latitude}-${coordinate.longitude}-${index}`,
+          latitude: coordinate.latitude,
+          longitude: coordinate.longitude,
+        };
+      })
+      .filter((pin): pin is ProviderMapPin & { id: string } => pin !== null);
+  }, [address, latitude, longitude, pins, title]);
 
-          // Disable scroll zoom by default (user can enable with controls)
-          map.scrollWheelZoom.disable();
-        </script>
-      </body>
-      </html>
-    `;
-  };
+  if (!visible) return null;
+
+  const hasValidLocation = markers.length > 0;
+  const region = hasValidLocation ? getRegion(markers) : null;
+  const coordinateLabel =
+    markers.length === 1
+      ? `${markers[0].latitude.toFixed(6)}, ${markers[0].longitude.toFixed(6)}`
+      : `${markers.length} provider locations`;
 
   return (
     <Modal
       visible={visible}
       animationType="slide"
-      presentationStyle="pageSheet"
+      transparent={false}
       onRequestClose={onClose}
+      statusBarTranslucent={Platform.OS === 'android'}
     >
-      <SafeAreaView className="flex-1 bg-white dark:bg-[#0F172A]" edges={['top']}>
-        {/* Header */}
-        <View className="px-4 py-3 border-b border-gray-200 dark:border-[#334155] flex-row items-center justify-between">
-          <View className="flex-1">
-            <Text className="text-lg font-bold text-gray-900 dark:text-white" numberOfLines={1}>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <View style={styles.headerText}>
+            <Text style={styles.title} numberOfLines={1}>
               {title}
             </Text>
-            {address && (
-              <Text className="text-sm text-gray-500 dark:text-gray-400 mt-0.5" numberOfLines={1}>
+            {address ? (
+              <Text style={styles.address} numberOfLines={1}>
                 {address}
               </Text>
-            )}
+            ) : null}
           </View>
           <TouchableOpacity
             onPress={onClose}
-            className="ml-3 w-10 h-10 items-center justify-center rounded-full bg-gray-100 dark:bg-[#1E293B]"
+            style={styles.closeButton}
             activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Close map"
           >
-            <Text className="text-gray-600 dark:text-gray-300 text-xl font-bold">×</Text>
+            <Ionicons name="close" size={22} color="#6B7280" />
           </TouchableOpacity>
         </View>
 
-        {/* Map */}
-        <View className="flex-1">
-          <WebView
-            source={{ html: generateMapHTML() }}
-            style={{ flex: 1 }}
-            javaScriptEnabled={true}
-            domStorageEnabled={true}
-            startInLoadingState={true}
-            scalesPageToFit={true}
-            bounces={false}
-          />
+        <View style={styles.mapContainer}>
+          {!hasValidLocation || !region ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="location-outline" size={44} color="#9CA3AF" />
+              <Text style={styles.emptyTitle}>Location Not Available</Text>
+              <Text style={styles.emptyText}>
+                Coordinates for this provider are not available.
+              </Text>
+            </View>
+          ) : (
+            <>
+              {!isMapReady ? (
+                <View style={styles.loadingOverlay}>
+                  <ActivityIndicator size="large" color={BLUE} />
+                  <Text style={styles.loadingText}>Loading map...</Text>
+                </View>
+              ) : null}
+              <MapView
+                key={markers.map((marker) => marker.id).join('|')}
+                style={styles.map}
+                initialRegion={region}
+                onMapReady={() => setIsMapReady(true)}
+              >
+                {markers.map((marker) => (
+                  <Marker
+                    key={marker.id}
+                    coordinate={{
+                      latitude: marker.latitude,
+                      longitude: marker.longitude,
+                    }}
+                    title={marker.title}
+                    description={marker.address}
+                    pinColor={ORANGE}
+                  />
+                ))}
+              </MapView>
+            </>
+          )}
         </View>
 
-        {/* Footer with coordinates info */}
-        <View className="px-4 py-3 border-t border-gray-200 dark:border-[#334155] bg-gray-50 dark:bg-[#1E293B]">
-          <Text className="text-sm text-gray-500 dark:text-gray-400 text-center">
-            📍 {latitude.toFixed(6)}, {longitude.toFixed(6)}
-          </Text>
-        </View>
+        {hasValidLocation ? (
+          <View style={styles.footer}>
+            <Ionicons name="location" size={14} color="#9CA3AF" />
+            <Text style={styles.footerText}>{coordinateLabel}</Text>
+          </View>
+        ) : null}
       </SafeAreaView>
     </Modal>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  header: {
+    alignItems: 'center',
+    borderBottomColor: '#E5E7EB',
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  headerText: {
+    flex: 1,
+  },
+  title: {
+    color: '#111827',
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  address: {
+    color: '#6B7280',
+    fontSize: 13,
+    marginTop: 2,
+  },
+  closeButton: {
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 18,
+    height: 36,
+    justifyContent: 'center',
+    marginLeft: 12,
+    width: 36,
+  },
+  mapContainer: {
+    flex: 1,
+  },
+  map: {
+    flex: 1,
+  },
+  loadingOverlay: {
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+    bottom: 0,
+    justifyContent: 'center',
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    zIndex: 1,
+  },
+  loadingText: {
+    color: '#9CA3AF',
+    fontSize: 13,
+    marginTop: 10,
+  },
+  emptyState: {
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+    padding: 32,
+  },
+  emptyTitle: {
+    color: '#374151',
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 8,
+    marginTop: 12,
+    textAlign: 'center',
+  },
+  emptyText: {
+    color: '#9CA3AF',
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  footer: {
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+    borderTopColor: '#E5E7EB',
+    borderTopWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  footerText: {
+    color: '#9CA3AF',
+    fontSize: 13,
+    marginLeft: 6,
+    textAlign: 'center',
+  },
+});
