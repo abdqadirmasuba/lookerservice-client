@@ -13,6 +13,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { apiRequests } from '@/src/utils/apiRequests';
 import LocationMapModal from '@/src/componets/modals/LocationMapModal';
+import AuthRequiredModal from '@/src/componets/modals/AuthRequiredModal';
 import { useAppSelector } from '@/src/store/hooks';
 import type { ProviderDetailsResponse } from '@/src/types';
 
@@ -113,32 +114,11 @@ export default function ProviderProfileScreen() {
           <Text className="text-[17px] font-bold text-gray-900">Provider Profile</Text>
           <View className="w-6" />
         </View>
-        <View className="flex-1 items-center justify-center px-8">
-          <View className="w-20 h-20 rounded-full bg-primary-50 items-center justify-center mb-5">
-            <Ionicons name="lock-closed" size={36} color="#2DA9E9" />
-          </View>
-          <Text className="text-xl font-bold text-gray-900 text-center mb-2">
-            Sign In to View Provider
-          </Text>
-          <Text className="text-gray-500 text-center text-sm leading-5 mb-8">
-            Create an account or log in to browse provider profiles and book services.
-          </Text>
-          <TouchableOpacity
-            onPress={() => router.push({ pathname: '/(auth)/login', params: { returnTo: `/(providers)/${id}/profile` } })}
-            className="w-full py-3.5 rounded-2xl items-center mb-3"
-            style={{ backgroundColor: '#2DA9E9' }}
-            activeOpacity={0.85}
-          >
-            <Text className="text-white font-bold text-base">Log In</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => router.push({ pathname: '/(auth)/register', params: { returnTo: `/(providers)/${id}/profile` } })}
-            className="w-full py-3.5 rounded-2xl items-center border border-gray-200"
-            activeOpacity={0.85}
-          >
-            <Text className="text-gray-800 font-bold text-base">Create Account</Text>
-          </TouchableOpacity>
-        </View>
+        <AuthRequiredModal
+          visible
+          onBack={() => router.back()}
+          message="Sign in to browse provider profiles and book services."
+        />
       </SafeAreaView>
     );
   }

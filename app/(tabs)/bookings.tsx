@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import AuthRequiredModal from '@/src/componets/modals/AuthRequiredModal';
 import { useAppSelector, useAppDispatch } from '../../src/store/hooks';
 import {
   setBookings,
@@ -154,32 +155,11 @@ export default function BookingsScreen() {
           <Text className="text-2xl font-bold text-gray-900">My Bookings</Text>
           <Text className="text-sm text-gray-500 mt-0.5">Track your service bookings</Text>
         </View>
-        <View className="flex-1 items-center justify-center px-8">
-          <View className="w-[72px] h-[72px] rounded-full items-center justify-center mb-4" style={{ backgroundColor: '#F0FDF4' }}>
-            <Text className="text-[32px]">📅</Text>
-          </View>
-          <Text className="text-lg font-bold text-gray-900 text-center mb-2">
-            Sign In to View Bookings
-          </Text>
-          <Text className="text-sm text-gray-500 text-center leading-5 mb-7">
-            Log in to manage your bookings and track service appointments.
-          </Text>
-          <TouchableOpacity
-            onPress={() => router.push('/(auth)/login')}
-            className="w-full py-3.5 rounded-2xl items-center mb-3"
-            style={{ backgroundColor: '#2DA9E9' }}
-            activeOpacity={0.85}
-          >
-            <Text className="text-white font-bold text-base">Log In</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => router.push('/(auth)/register')}
-            className="w-full py-3.5 rounded-2xl items-center border border-gray-200"
-            activeOpacity={0.85}
-          >
-            <Text className="text-gray-800 font-bold text-base">Create Account</Text>
-          </TouchableOpacity>
-        </View>
+        <AuthRequiredModal
+          visible
+          onBack={() => router.back()}
+          message="Sign in to manage your bookings and track service appointments."
+        />
       </SafeAreaView>
     );
   }

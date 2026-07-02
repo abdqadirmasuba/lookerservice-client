@@ -9,6 +9,7 @@ import {
   Modal,
   ScrollView,
   StyleSheet,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -123,7 +124,14 @@ function ProviderCard({
     >
       <View className="flex-row items-center p-4">
         <View className="w-14 h-14 rounded-full bg-blue-50 items-center justify-center mr-4 flex-shrink-0">
-          <Text className="text-primary-600 font-bold text-lg">{initials}</Text>
+          {provider.business_logo_url ? (
+            <Image
+              source={{ uri: provider.business_logo_url }}
+              style={{ width: 56, height: 56, borderRadius: 28 }}
+            />
+          ) : (
+            <Text className="text-primary-600 font-bold text-lg">{initials}</Text>
+          )}
         </View>
         <View className="flex-1 min-w-0">
           <Text className="text-base font-bold text-gray-900" numberOfLines={1}>
@@ -313,7 +321,8 @@ export default function ProvidersScreen() {
         <View className="mt-3">
           {/* Location */}
           <TouchableOpacity
-            onPress={() => setShowMapPicker(true)}
+            // onPress={() => setShowMapPicker(true)}
+            onPress={() => {}}
             activeOpacity={0.8}
             style={styles.locationBtn}
           >
@@ -321,7 +330,7 @@ export default function ProvidersScreen() {
             <Text style={styles.locationBtnText} numberOfLines={1}>
               {locationLabel}
             </Text>
-            <Text style={styles.locationBtnChange}>Change</Text>
+            {/* <Text style={styles.locationBtnChange}>Change</Text> */}
           </TouchableOpacity>
 
           {/* Range */}

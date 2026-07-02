@@ -80,6 +80,7 @@ export interface ProviderListItem {
   full_name: string;
   profile_picture_url: string | null;
   distance: number;
+  business_logo_url: string | null;
 }
 
 export interface Service {

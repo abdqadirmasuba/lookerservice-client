@@ -3,6 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAppSelector } from '../../src/store/hooks';
 import { getInitials } from '../../src/utils/formatters';
+import AuthRequiredModal from '@/src/componets/modals/AuthRequiredModal';
 
 export default function AccountScreen() {
   const router = useRouter();
@@ -41,36 +42,17 @@ export default function AccountScreen() {
   if (!isAuthenticated) {
     return (
       <SafeAreaView className="flex-1 bg-white">
-        <View className="px-6 py-8 bg-primary-50 items-center">
-          <View className="w-24 h-24 rounded-full bg-primary-100 items-center justify-center mb-4">
-            <Text className="text-4xl">U</Text>
+        <View className="px-6 pt-6 pb-4 bg-primary-50 items-center">
+          <View className="w-16 h-16 rounded-full bg-primary-100 items-center justify-center mb-2">
+            <Text className="text-3xl">👤</Text>
           </View>
-          <Text className="text-2xl font-bold text-gray-900 mb-1">My Account</Text>
-          <Text className="text-gray-500 text-sm">Sign in to access your account</Text>
+          <Text className="text-xl font-bold text-gray-900">My Account</Text>
         </View>
-        <View className="flex-1 px-6 justify-center">
-          <Text className="text-lg font-bold text-gray-900 text-center mb-2">
-            Sign In Required
-          </Text>
-          <Text className="text-sm text-gray-500 text-center leading-5 mb-8">
-            Create an account or log in to manage your profile, addresses and settings.
-          </Text>
-          <TouchableOpacity
-            onPress={() => router.push('/(auth)/login')}
-            className="w-full py-3.5 rounded-2xl items-center mb-3"
-            style={{ backgroundColor: '#2DA9E9' }}
-            activeOpacity={0.85}
-          >
-            <Text className="text-white font-bold text-base">Log In</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => router.push('/(auth)/register')}
-            className="w-full py-3.5 rounded-2xl items-center border border-gray-200"
-            activeOpacity={0.85}
-          >
-            <Text className="text-gray-800 font-bold text-base">Create Account</Text>
-          </TouchableOpacity>
-        </View>
+        <AuthRequiredModal
+          visible
+          onBack={() => router.back()}
+          message="Sign in to manage your profile, addresses, and settings."
+        />
       </SafeAreaView>
     );
   }
